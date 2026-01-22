@@ -11,6 +11,7 @@ An AI-powered presentation assistant that helps you create charts and visualizat
 - **💾 Download Charts**: Export as PNG images
 - **📁 Chart Gallery**: Track all generated charts
 - **🔄 Data Refresh**: Sync latest data from connected Google Sheets
+- **💾 Persistent Sessions**: All data automatically saved across browser sessions
 
 ## Getting Started
 
@@ -54,6 +55,11 @@ Describe what you want:
 - Go to Google Slides
 - Press **Ctrl+V** (Windows) or **Cmd+V** (Mac)
 - Resize and position as needed
+
+### 4. Your Work is Saved Automatically
+- All data, charts, and conversations persist across sessions
+- Close the browser and return anytime - everything will be there
+- Use "Clear Chat" or "Clear All Data" buttons to reset when needed
 
 ## CSV Format
 
