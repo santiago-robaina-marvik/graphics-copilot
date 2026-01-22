@@ -5,10 +5,12 @@ An AI-powered presentation assistant that helps you create charts and visualizat
 ## Features
 
 - **📊 Data Upload**: Upload CSV files to create charts from your real data
+- **🔗 Google Sheets Integration**: Connect to public Google Sheets via URL
 - **🎨 AI Chart Generator**: Describe charts in natural language
 - **📋 Copy to Clipboard**: One-click copy, paste directly into Google Slides
 - **💾 Download Charts**: Export as PNG images
 - **📁 Chart Gallery**: Track all generated charts
+- **🔄 Data Refresh**: Sync latest data from connected Google Sheets
 
 ## Getting Started
 
@@ -24,10 +26,22 @@ Open http://localhost:5173
 
 ## Usage
 
-### 1. Upload Your Data (Optional)
+### 1. Connect Your Data (Optional)
+
+**Option A: Upload CSV File**
 - Click the upload area or drag & drop a CSV file
 - Preview shows columns and sample rows
-- Charts will automatically use your data
+
+**Option B: Connect Google Sheet**
+- Click **Data** button in header
+- Click **Connect Google Sheet**
+- Share your sheet publicly and paste the URL
+- See [GOOGLE_SHEETS_GUIDE.md](./GOOGLE_SHEETS_GUIDE.md) for detailed instructions
+
+**Option C: Add Manual Data**
+- Click **Data** button in header
+- Click **Add Manual Data**
+- Paste CSV data directly
 
 ### 2. Generate Charts
 Describe what you want:
@@ -79,9 +93,10 @@ A sample CSV is included at `public/sample-data.csv` with monthly revenue data.
 ## Future Enhancements
 
 - [ ] Connect to real AI API (OpenAI, Claude) for smarter chart generation
+- [ ] Google Sheets API with OAuth (write access, auto-sync)
 - [ ] Support Excel files (.xlsx)
 - [ ] Column selection for custom chart mapping
 - [ ] More chart types (scatter, heatmap, etc.)
 - [ ] Chart customization (colors, labels, titles)
 - [ ] Save/load chart configurations
-- [ ] Google Sheets integration
+- [ ] Real-time collaboration features
