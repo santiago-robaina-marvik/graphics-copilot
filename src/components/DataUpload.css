@@ -1,0 +1,214 @@
+.data-upload {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background: var(--bg-tertiary);
+  border: 2px dashed var(--border-subtle);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-zone:hover {
+  border-color: var(--accent-blue);
+  background: var(--bg-elevated);
+}
+
+.upload-zone.dragging {
+  border-color: var(--accent-blue);
+  background: rgba(61, 90, 254, 0.05);
+  transform: scale(1.02);
+}
+
+.upload-zone svg {
+  color: var(--accent-blue);
+  margin-bottom: 12px;
+}
+
+.upload-zone h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.upload-zone p {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.data-preview {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.preview-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-title svg {
+  color: var(--accent-blue);
+  flex-shrink: 0;
+}
+
+.preview-title > span:first-of-type {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-primary);
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.clear-btn {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.clear-btn:hover {
+  background: var(--bg-primary);
+  color: var(--accent-pink);
+}
+
+.preview-content {
+  padding: 14px;
+}
+
+.preview-columns {
+  margin-bottom: 12px;
+}
+
+.preview-columns strong {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.column-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.column-tag {
+  font-size: 11px;
+  background: var(--bg-elevated);
+  color: var(--accent-blue);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+}
+
+.preview-table-wrapper {
+  overflow-x: auto;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+}
+
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  background: var(--bg-elevated);
+}
+
+.preview-table thead {
+  background: var(--bg-primary);
+}
+
+.preview-table th {
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.preview-table td {
+  padding: 8px 10px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.preview-table tbody tr:hover {
+  background: var(--bg-tertiary);
+}
+
+.preview-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(0, 230, 118, 0.08);
+  border: 1px solid rgba(0, 230, 118, 0.2);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--accent-green);
+}
+
+.upload-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 64, 129, 0.08);
+  border: 1px solid rgba(255, 64, 129, 0.2);
+  border-radius: 8px;
+  color: var(--accent-pink);
+  font-size: 12px;
+}
