@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Header from './components/Header'
 import SlidesViewer from './components/SlidesViewer'
 import AISidebar from './components/AISidebar'
@@ -6,11 +6,52 @@ import DataManager from './components/DataManager'
 import './App.css'
 
 function App() {
-  const [slidesUrl, setSlidesUrl] = useState('')
-  const [generatedCharts, setGeneratedCharts] = useState([])
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [currentView, setCurrentView] = useState('main') // 'main' or 'data'
-  const [userData, setUserData] = useState(null)
+  // Load persisted state from localStorage
+  const [slidesUrl, setSlidesUrl] = useState(() => {
+    const saved = localStorage.getItem('slidesUrl')
+    return saved || ''
+  })
+  
+  const [generatedCharts, setGeneratedCharts] = useState(() => {
+    const saved = localStorage.getItem('generatedCharts')
+    return saved ? JSON.parse(saved) : []
+  })
+  
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('sidebarOpen')
+    return saved !== null ? JSON.parse(saved) : true
+  })
+  
+  const [currentView, setCurrentView] = useState('main')
+  
+  const [userData, setUserData] = useState(() => {
+    const saved = localStorage.getItem('activeUserData')
+    return saved ? JSON.parse(saved) : null
+  })
+
+  // Persist slidesUrl to localStorage
+  useEffect(() => {
+    localStorage.setItem('slidesUrl', slidesUrl)
+  }, [slidesUrl])
+
+  // Persist generatedCharts to localStorage
+  useEffect(() => {
+    localStorage.setItem('generatedCharts', JSON.stringify(generatedCharts))
+  }, [generatedCharts])
+
+  // Persist sidebarOpen to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarOpen', JSON.stringify(sidebarOpen))
+  }, [sidebarOpen])
+
+  // Persist userData to localStorage
+  useEffect(() => {
+    if (userData) {
+      localStorage.setItem('activeUserData', JSON.stringify(userData))
+    } else {
+      localStorage.removeItem('activeUserData')
+    }
+  }, [userData])
 
   const handleChartGenerated = (chart) => {
     setGeneratedCharts(prev => [...prev, chart])

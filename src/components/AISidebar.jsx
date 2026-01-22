@@ -124,12 +124,20 @@ const suggestedPrompts = [
 ]
 
 function AISidebar({ isOpen, onChartGenerated, generatedCharts, userData: externalUserData }) {
-  const [messages, setMessages] = useState([
-    {
-      type: 'assistant',
-      content: "Hi! Upload your data (CSV) or describe what you'd like to visualize and I'll generate a chart you can copy and paste into your slides."
+  // Load persisted chat messages
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem('chatMessages')
+    if (saved) {
+      return JSON.parse(saved)
     }
-  ])
+    return [
+      {
+        type: 'assistant',
+        content: "Hi! Upload your data (CSV) or describe what you'd like to visualize and I'll generate a chart you can copy and paste into your slides."
+      }
+    ]
+  })
+  
   const [inputValue, setInputValue] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [activeTab, setActiveTab] = useState('chat')
@@ -137,6 +145,11 @@ function AISidebar({ isOpen, onChartGenerated, generatedCharts, userData: extern
   const [userData, setUserData] = useState(null)
   const messagesEndRef = useRef(null)
   const chartRefs = useRef({})
+
+  // Persist chat messages to localStorage
+  useEffect(() => {
+    localStorage.setItem('chatMessages', JSON.stringify(messages))
+  }, [messages])
 
   // Update local userData when external data changes
   useEffect(() => {
@@ -246,6 +259,17 @@ function AISidebar({ isOpen, onChartGenerated, generatedCharts, userData: extern
     handleSend(text)
   }
 
+  const handleClearChat = () => {
+    if (confirm('Clear all chat messages? This cannot be undone.')) {
+      const initialMessage = {
+        type: 'assistant',
+        content: "Hi! Upload your data (CSV) or describe what you'd like to visualize and I'll generate a chart you can copy and paste into your slides."
+      }
+      setMessages([initialMessage])
+      localStorage.setItem('chatMessages', JSON.stringify([initialMessage]))
+    }
+  }
+
   if (!isOpen) return null
 
   return (
@@ -270,6 +294,14 @@ function AISidebar({ isOpen, onChartGenerated, generatedCharts, userData: extern
       {activeTab === 'chat' ? (
         <>
           <DataUpload onDataLoaded={setUserData} currentData={userData} />
+          
+          {messages.length > 1 && (
+            <div className="chat-actions">
+              <button className="clear-chat-button" onClick={handleClearChat}>
+                Clear Chat
+              </button>
+            </div>
+          )}
           
           <div className="messages-container">
             {messages.map((msg, index) => (

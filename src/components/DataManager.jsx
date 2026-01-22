@@ -1,10 +1,18 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Upload, Trash2, Eye, EyeOff, Plus, X, Link2, RefreshCw } from 'lucide-react'
 import Papa from 'papaparse'
 import './DataManager.css'
 
 function DataManager({ userData, onDataUpdate }) {
-  const [datasets, setDatasets] = useState(userData ? [{ id: 1, name: 'Current Dataset', data: userData }] : [])
+  // Load persisted datasets from localStorage
+  const [datasets, setDatasets] = useState(() => {
+    const saved = localStorage.getItem('datasets')
+    if (saved) {
+      return JSON.parse(saved)
+    }
+    return userData ? [{ id: 1, name: 'Current Dataset', data: userData }] : []
+  })
+  
   const [selectedDataset, setSelectedDataset] = useState(null)
   const [showPreview, setShowPreview] = useState(null)
   const [isAddingManual, setIsAddingManual] = useState(false)
@@ -12,6 +20,11 @@ function DataManager({ userData, onDataUpdate }) {
   const [manualData, setManualData] = useState({ name: '', csvText: '' })
   const [sheetData, setSheetData] = useState({ name: '', url: '' })
   const [loadingSheet, setLoadingSheet] = useState(false)
+
+  // Persist datasets to localStorage
+  useEffect(() => {
+    localStorage.setItem('datasets', JSON.stringify(datasets))
+  }, [datasets])
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0]
@@ -206,11 +219,34 @@ function DataManager({ userData, onDataUpdate }) {
     setShowPreview(showPreview === id ? null : id)
   }
 
+  const handleClearAll = () => {
+    if (confirm('Are you sure you want to clear all datasets and chat history? This cannot be undone.')) {
+      // Clear datasets
+      setDatasets([])
+      localStorage.removeItem('datasets')
+      
+      // Clear other persisted data
+      localStorage.removeItem('chatMessages')
+      localStorage.removeItem('generatedCharts')
+      localStorage.removeItem('activeUserData')
+      
+      alert('All data cleared. Refresh the page to start fresh.')
+    }
+  }
+
   return (
     <div className="data-manager">
       <div className="data-manager-header">
-        <h1>Data Management</h1>
-        <p>Upload, view, and manage your datasets for chart generation</p>
+        <div>
+          <h1>Data Management</h1>
+          <p>Upload, view, and manage your datasets for chart generation</p>
+          <p className="persistence-note">💾 Your data is automatically saved and will persist across sessions</p>
+        </div>
+        {datasets.length > 0 && (
+          <button className="clear-all-button" onClick={handleClearAll}>
+            Clear All Data
+          </button>
+        )}
       </div>
 
       <div className="data-manager-actions">

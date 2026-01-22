@@ -7,6 +7,10 @@
 
 .data-manager-header {
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
 }
 
 .data-manager-header h1 {
@@ -19,6 +23,32 @@
 .data-manager-header p {
   color: var(--text-secondary);
   font-size: 0.95rem;
+}
+
+.persistence-note {
+  color: var(--primary) !important;
+  font-size: 0.85rem !important;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.clear-all-button {
+  padding: 0.75rem 1.25rem;
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.clear-all-button:hover {
+  background: #ef4444;
+  color: white;
+  transform: translateY(-1px);
 }
 
 .data-manager-actions {
