@@ -1,27 +1,43 @@
-import React, { useState } from 'react'
-import { Presentation, PanelRightClose, PanelRight, Link, Database } from 'lucide-react'
-import './Header.css'
+import React, { useState } from "react";
+import {
+  Presentation,
+  PanelRightClose,
+  PanelRight,
+  Link,
+  Database,
+} from "lucide-react";
+import "./Header.css";
 
-function Header({ slidesUrl, onSlidesUrlChange, sidebarOpen, onToggleSidebar, currentView, onViewChange }) {
-  const [inputValue, setInputValue] = useState('')
+function Header({
+  slidesUrl,
+  onSlidesUrlChange,
+  sidebarOpen,
+  onToggleSidebar,
+  currentView,
+  onViewChange,
+}) {
+  const [inputValue, setInputValue] = useState("");
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    if (inputValue.trim()) {
-      // Convert edit URL to embed URL
-      let embedUrl = inputValue.trim()
-      if (embedUrl.includes('/edit')) {
-        embedUrl = embedUrl.replace('/edit', '/embed')
-      } else if (!embedUrl.includes('/embed')) {
-        embedUrl = embedUrl + '/embed'
-      }
-      // Add parameters for clean embed
-      if (!embedUrl.includes('?')) {
-        embedUrl += '?start=false&loop=false&delayms=3000'
-      }
-      onSlidesUrlChange(embedUrl)
+    e.preventDefault();
+    if (!inputValue.trim()) {
+      // Clear the URL when input is empty
+      onSlidesUrlChange("");
+      return;
     }
-  }
+    // Convert edit URL to embed URL
+    let embedUrl = inputValue.trim();
+    if (embedUrl.includes("/edit")) {
+      embedUrl = embedUrl.replace("/edit", "/embed");
+    } else if (!embedUrl.includes("/embed")) {
+      embedUrl = embedUrl + "/embed";
+    }
+    // Add parameters for clean embed
+    if (!embedUrl.includes("?")) {
+      embedUrl += "?start=false&loop=false&delayms=3000";
+    }
+    onSlidesUrlChange(embedUrl);
+  };
 
   return (
     <header className="header">
@@ -34,7 +50,7 @@ function Header({ slidesUrl, onSlidesUrlChange, sidebarOpen, onToggleSidebar, cu
         </div>
       </div>
 
-      {currentView === 'main' && (
+      {currentView === "main" && (
         <form className="url-form" onSubmit={handleSubmit}>
           <div className="url-input-wrapper">
             <Link size={16} className="url-icon" />
@@ -53,26 +69,30 @@ function Header({ slidesUrl, onSlidesUrlChange, sidebarOpen, onToggleSidebar, cu
       )}
 
       <div className="header-right">
-        <button 
-          className={`nav-button ${currentView === 'data' ? 'active' : ''}`}
-          onClick={() => onViewChange(currentView === 'main' ? 'data' : 'main')}
-          title={currentView === 'main' ? 'Manage Data' : 'Back to Main'}
+        <button
+          className={`nav-button ${currentView === "data" ? "active" : ""}`}
+          onClick={() => onViewChange(currentView === "main" ? "data" : "main")}
+          title={currentView === "main" ? "Manage Data" : "Back to Main"}
         >
           <Database size={20} />
-          <span>{currentView === 'main' ? 'Data' : 'Back'}</span>
+          <span>{currentView === "main" ? "Data" : "Back"}</span>
         </button>
-        {currentView === 'main' && (
-          <button 
+        {currentView === "main" && (
+          <button
             className="sidebar-toggle"
             onClick={onToggleSidebar}
-            title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            title={sidebarOpen ? "Close sidebar" : "Open sidebar"}
           >
-            {sidebarOpen ? <PanelRightClose size={20} /> : <PanelRight size={20} />}
+            {sidebarOpen ? (
+              <PanelRightClose size={20} />
+            ) : (
+              <PanelRight size={20} />
+            )}
           </button>
         )}
       </div>
     </header>
-  )
+  );
 }
 
-export default Header
+export default Header;
