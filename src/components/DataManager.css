@@ -28,7 +28,8 @@
 }
 
 .upload-button,
-.manual-add-button {
+.manual-add-button,
+.sheet-connect-button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -44,17 +45,20 @@
 }
 
 .upload-button:hover,
-.manual-add-button:hover {
+.manual-add-button:hover,
+.sheet-connect-button:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
 }
 
-.manual-add-button {
+.manual-add-button,
+.sheet-connect-button {
   background: var(--surface-secondary);
   color: var(--text-primary);
 }
 
-.manual-add-button:hover {
+.manual-add-button:hover,
+.sheet-connect-button:hover {
   background: var(--surface-hover);
 }
 
@@ -112,6 +116,36 @@
   background: var(--primary-hover);
 }
 
+.manual-data-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sheet-connect-form .sheet-instructions {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sheet-instructions p {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.sheet-instructions ol {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.sheet-instructions li {
+  margin: 0.25rem 0;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -164,6 +198,22 @@
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dataset-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: var(--primary);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 500;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .dataset-meta {
@@ -209,6 +259,34 @@
   background: #ef4444;
   border-color: #ef4444;
   color: white;
+}
+
+.refresh-button {
+  color: var(--primary);
+}
+
+.refresh-button:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.refresh-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .dataset-preview {
