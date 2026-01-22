@@ -1,10 +1,10 @@
-import React from 'react'
-import { Presentation, ArrowRight } from 'lucide-react'
-import './SlidesViewer.css'
+import React from "react";
+import { Presentation, ArrowRight } from "lucide-react";
+import "./SlidesViewer.css";
 
 function SlidesViewer({ url, sidebarOpen }) {
   return (
-    <div className={`slides-viewer ${sidebarOpen ? '' : 'full-width'}`}>
+    <div className={`slides-viewer ${sidebarOpen ? "" : "full-width"}`}>
       {url ? (
         <div className="slides-container">
           <iframe
@@ -39,13 +39,15 @@ function SlidesViewer({ url, sidebarOpen }) {
             </div>
             <div className="demo-hint">
               <ArrowRight size={16} />
-              <span>Or try the AI assistant to generate charts for your slides</span>
+              <span>
+                Or try the AI assistant to generate charts for your slides
+              </span>
             </div>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default SlidesViewer
+export default SlidesViewer;

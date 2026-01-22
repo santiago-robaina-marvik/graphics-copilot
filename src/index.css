@@ -22,13 +22,21 @@
   --accent-orange: #ff9100;
   --accent-pink: #ff4081;
   --gradient-primary: linear-gradient(135deg, #3d5afe 0%, #7c4dff 100%);
-  --gradient-glow: radial-gradient(ellipse at center, rgba(61, 90, 254, 0.15) 0%, transparent 70%);
+  --gradient-glow: radial-gradient(
+    ellipse at center,
+    rgba(61, 90, 254, 0.15) 0%,
+    transparent 70%
+  );
   --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 40px rgba(61, 90, 254, 0.3);
 }
 
 body {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    "DM Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;

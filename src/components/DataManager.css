@@ -119,7 +119,7 @@
   border-radius: 8px;
   color: var(--text-primary);
   font-size: 0.9rem;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   resize: vertical;
   margin-bottom: 1rem;
 }
