@@ -180,6 +180,39 @@
   color: var(--accent-pink);
 }
 
+.nav-button {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.nav-button:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+}
+
+.nav-button.active {
+  background: var(--gradient-primary);
+  color: white;
+  border-color: transparent;
+}
+
+.nav-button.active:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(61, 90, 254, 0.4);
+}
+
 .sidebar-toggle {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-subtle);

@@ -123,7 +123,7 @@ const suggestedPrompts = [
   { icon: TrendingUp, text: "Visualize growth over time" },
 ]
 
-function AISidebar({ isOpen, onChartGenerated, generatedCharts }) {
+function AISidebar({ isOpen, onChartGenerated, generatedCharts, userData: externalUserData }) {
   const [messages, setMessages] = useState([
     {
       type: 'assistant',
@@ -137,6 +137,14 @@ function AISidebar({ isOpen, onChartGenerated, generatedCharts }) {
   const [userData, setUserData] = useState(null)
   const messagesEndRef = useRef(null)
   const chartRefs = useRef({})
+
+  // Update local userData when external data changes
+  useEffect(() => {
+    if (externalUserData) {
+      const columns = Object.keys(externalUserData[0] || {})
+      setUserData({ data: externalUserData, columns })
+    }
+  }, [externalUserData])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
