@@ -24,3 +24,17 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+*.egg
+
+# Backend generated files
+backend/static/charts/
