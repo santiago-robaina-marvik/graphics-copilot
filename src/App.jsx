@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { toPng } from "html-to-image";
 import Header from "./components/Header";
 import SlidesViewer from "./components/SlidesViewer";
 import AISidebar from "./components/AISidebar";
 import DataManager from "./components/DataManager";
+import TemplateSelector from "./components/TemplateSelector";
 import "./App.css";
 
 function App() {
@@ -61,6 +63,42 @@ function App() {
     setGeneratedCharts((prev) => prev.filter((chart) => chart.id !== chartId));
   };
 
+  const handleSaveTemplate = async (templateElement, templateType) => {
+    try {
+      // Store original transform and temporarily reset for full-size capture
+      const originalTransform = templateElement.style.transform;
+      templateElement.style.transform = "none";
+
+      const dataUrl = await toPng(templateElement, {
+        backgroundColor: "transparent",
+        pixelRatio: 2, // 2x for retina quality (outputs 1920x1080)
+        width: 960,
+        height: 540,
+        style: {
+          transform: "none",
+          background: "transparent",
+        },
+      });
+
+      // Restore original transform
+      templateElement.style.transform = originalTransform;
+
+      const newChart = {
+        id: Date.now(),
+        type: `template-${templateType}`,
+        imageUrl: dataUrl,
+      };
+
+      setGeneratedCharts((prev) => [...prev, newChart]);
+    } catch (err) {
+      console.error("Failed to save template:", err);
+      // Restore transform on error
+      if (templateElement) {
+        templateElement.style.transform = "";
+      }
+    }
+  };
+
   const handleDataUpdate = (data) => {
     setUserData(data);
     setCurrentView("main"); // Return to main view after selecting data
@@ -78,7 +116,13 @@ function App() {
       />
       {currentView === "main" ? (
         <div className="main-content">
-          <SlidesViewer url={slidesUrl} sidebarOpen={sidebarOpen} />
+          <div className="left-panel">
+            <TemplateSelector
+              generatedCharts={generatedCharts}
+              onSaveTemplate={handleSaveTemplate}
+            />
+            <SlidesViewer url={slidesUrl} sidebarOpen={sidebarOpen} />
+          </div>
           <AISidebar
             isOpen={sidebarOpen}
             onChartGenerated={handleChartGenerated}

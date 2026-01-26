@@ -431,7 +431,15 @@ function AISidebar({
           ) : (
             <div className="gallery-grid">
               {generatedCharts.map((chart) => (
-                <div key={chart.id} className="gallery-item">
+                <div
+                  key={chart.id}
+                  className="gallery-item"
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData("chartId", chart.id.toString());
+                    e.dataTransfer.effectAllowed = "copy";
+                  }}
+                >
                   <div
                     className="gallery-chart"
                     ref={(el) => (chartRefs.current[chart.id] = el)}

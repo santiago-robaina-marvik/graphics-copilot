@@ -428,6 +428,17 @@
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   overflow: hidden;
+  cursor: grab;
+  transition: all 0.2s ease;
+}
+
+.gallery-item:active {
+  cursor: grabbing;
+}
+
+.gallery-item[draggable="true"]:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
 }
 
 .gallery-chart {
