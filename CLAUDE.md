@@ -31,8 +31,6 @@ npm run dev              # Start Vite dev server (localhost:5173)
 npm run build            # Production build to dist/
 npm test                 # Run Vitest in watch mode
 npm run test:coverage    # Run tests with coverage report
-npm run test:e2e         # Run Cypress E2E tests headless
-npm run test:e2e:open    # Open Cypress Test Runner
 ```
 
 **Run single test:**

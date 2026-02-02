@@ -101,8 +101,6 @@ CHARTS_DIR=static/charts                    # Optional (default shown)
 ```bash
 npm test                  # Run tests in watch mode
 npm run test:coverage     # Generate coverage report
-npm run test:e2e          # Run Cypress E2E tests
-npm run test:e2e:open     # Open Cypress Test Runner
 ```
 
 **Backend Tests:**
