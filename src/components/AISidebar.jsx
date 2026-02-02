@@ -12,8 +12,6 @@ import {
   Check,
   Trash2,
 } from "lucide-react";
-import { toPng } from "html-to-image";
-import ChartRenderer from "./ChartRenderer";
 import {
   sendChatMessage,
   getChartImageUrl,
@@ -59,7 +57,6 @@ function AISidebar({
   const [sessionId] = useState(() => getOrCreateSessionId());
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
-  const chartRefs = useRef({});
 
   // Persist chat messages to localStorage
   useEffect(() => {
@@ -130,68 +127,6 @@ function AISidebar({
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handleDownloadChart = async (chartId) => {
-    try {
-      const chartElement = chartRefs.current[chartId];
-      if (chartElement) {
-        const dataUrl = await toPng(chartElement, {
-          backgroundColor: "#1a1a24",
-          pixelRatio: 2,
-        });
-        const link = document.createElement("a");
-        link.download = `chart-${chartId}.png`;
-        link.href = dataUrl;
-        link.click();
-      }
-    } catch (err) {
-      console.error("Failed to download chart:", err);
-    }
-  };
-
-  const handleCopyChart = async (chartId) => {
-    try {
-      const chartElement = chartRefs.current[chartId];
-      if (!chartElement) return;
-
-      const dataUrl = await toPng(chartElement, {
-        backgroundColor: "#1a1a24",
-        pixelRatio: 2,
-      });
-
-      // Convert data URL to blob
-      const response = await fetch(dataUrl);
-      const blob = await response.blob();
-
-      // Copy to clipboard
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          "image/png": blob,
-        }),
-      ]);
-
-      // Show success state
-      setCopiedCharts((prev) => ({ ...prev, [chartId]: true }));
-
-      // Reset after 2 seconds
-      setTimeout(() => {
-        setCopiedCharts((prev) => ({ ...prev, [chartId]: false }));
-      }, 2000);
-    } catch (err) {
-      console.error("Failed to copy chart:", err);
-      // Fallback: try to open in new tab for manual copy
-      try {
-        const chartElement = chartRefs.current[chartId];
-        const dataUrl = await toPng(chartElement, {
-          backgroundColor: "#1a1a24",
-          pixelRatio: 2,
-        });
-        window.open(dataUrl, "_blank");
-      } catch (e) {
-        alert("Could not copy. Try downloading instead.");
-      }
     }
   };
 
@@ -294,39 +229,25 @@ function AISidebar({
                 )}
                 <div className="message-content">
                   <p>{msg.content}</p>
-                  {(msg.chart || msg.chartImage) && (
+                  {msg.chartImage && (
                     <div className="message-chart">
-                      <div
-                        className="chart-preview"
-                        ref={(el) =>
-                          (chartRefs.current[msg.chart?.id || msg.chartId] = el)
-                        }
-                      >
-                        {msg.chartImage ? (
-                          <img
-                            src={msg.chartImage}
-                            alt="Generated chart"
-                            className="chart-image"
-                            crossOrigin="anonymous"
-                          />
-                        ) : (
-                          <ChartRenderer chart={msg.chart} />
-                        )}
+                      <div className="chart-preview">
+                        <img
+                          src={msg.chartImage}
+                          alt="Generated chart"
+                          className="chart-image"
+                          crossOrigin="anonymous"
+                        />
                       </div>
                       <div className="chart-actions">
                         <button
-                          className={`action-btn copy ${copiedCharts[msg.chart?.id || msg.chartId] ? "success" : ""}`}
+                          className={`action-btn copy ${copiedCharts[msg.chartId] ? "success" : ""}`}
                           onClick={() =>
-                            msg.chartImage
-                              ? handleCopyImageChart(
-                                  msg.chartImage,
-                                  msg.chartId,
-                                )
-                              : handleCopyChart(msg.chart.id)
+                            handleCopyImageChart(msg.chartImage, msg.chartId)
                           }
                           title="Copy to clipboard, then paste in Google Slides"
                         >
-                          {copiedCharts[msg.chart?.id || msg.chartId] ? (
+                          {copiedCharts[msg.chartId] ? (
                             <>
                               <Check size={14} />
                               Copied!
@@ -342,12 +263,10 @@ function AISidebar({
                         <button
                           className="action-btn download"
                           onClick={() =>
-                            msg.chartImage
-                              ? handleDownloadImageChart(
-                                  msg.chartImage,
-                                  msg.chartId,
-                                )
-                              : handleDownloadChart(msg.chart.id)
+                            handleDownloadImageChart(
+                              msg.chartImage,
+                              msg.chartId,
+                            )
                           }
                           title="Download as PNG"
                         >
@@ -440,20 +359,13 @@ function AISidebar({
                     e.dataTransfer.effectAllowed = "copy";
                   }}
                 >
-                  <div
-                    className="gallery-chart"
-                    ref={(el) => (chartRefs.current[chart.id] = el)}
-                  >
-                    {chart.imageUrl ? (
-                      <img
-                        src={chart.imageUrl}
-                        alt="Chart"
-                        className="chart-image"
-                        crossOrigin="anonymous"
-                      />
-                    ) : (
-                      <ChartRenderer chart={chart} compact />
-                    )}
+                  <div className="gallery-chart">
+                    <img
+                      src={chart.imageUrl}
+                      alt="Chart"
+                      className="chart-image"
+                      crossOrigin="anonymous"
+                    />
                   </div>
                   <div className="gallery-actions">
                     <span className="chart-type">{chart.type}</span>
@@ -461,9 +373,7 @@ function AISidebar({
                       <button
                         className={`gallery-btn copy ${copiedCharts[chart.id] ? "success" : ""}`}
                         onClick={() =>
-                          chart.imageUrl
-                            ? handleCopyImageChart(chart.imageUrl, chart.id)
-                            : handleCopyChart(chart.id)
+                          handleCopyImageChart(chart.imageUrl, chart.id)
                         }
                         title="Copy to clipboard"
                       >
@@ -476,9 +386,7 @@ function AISidebar({
                       <button
                         className="gallery-btn"
                         onClick={() =>
-                          chart.imageUrl
-                            ? handleDownloadImageChart(chart.imageUrl, chart.id)
-                            : handleDownloadChart(chart.id)
+                          handleDownloadImageChart(chart.imageUrl, chart.id)
                         }
                         title="Download"
                       >
