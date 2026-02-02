@@ -38,3 +38,8 @@ __pycache__/
 
 # Backend generated files
 backend/static/charts/
+
+# Test coverage
+coverage/
+.coverage
+*.coverage
