@@ -11,19 +11,128 @@ An AI-powered presentation assistant that helps you create charts and visualizat
 - **💾 Download Charts**: Export as PNG images
 - **📁 Chart Gallery**: Track all generated charts
 - **🔄 Data Refresh**: Sync latest data from connected Google Sheets
-- **💾 Persistent Sessions**: All data automatically saved across browser sessions
 
-## Getting Started
+## Local Development Setup
+
+### Prerequisites
+
+- **Node.js** 16+ and npm
+- **Python** 3.9+
+- **Google Gemini API Key** (get one at https://aistudio.google.com/app/apikey)
+
+### 1. Frontend Setup
 
 ```bash
 # Install dependencies
 npm install
 
+# Create environment file (optional)
+# Add VITE_GOOGLE_CLIENT_ID for Google Slides integration
+cp .env.example .env  # If you have one, or create manually
+
 # Start development server
 npm run dev
 ```
 
-Open http://localhost:5173
+
+### 2. Backend Setup
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+pip install -r requirements-dev.txt  # For testing
+
+# Create environment file and add your Gemini API key
+cp .env.example .env
+# Edit .env and add: GEMINI_API_KEY=your_key_here
+
+# Start backend server
+uvicorn app.main:app --reload --port 8000
+```
+
+The backend API will be available at **http://localhost:8000**
+
+### 3. Running the Full Application
+
+You need **both** servers running:
+
+1. **Terminal 1** (Frontend):
+
+   ```bash
+   npm run dev
+   ```
+2. **Terminal 2** (Backend):
+
+   ```bash
+   cd backend
+   source venv/bin/activate
+   uvicorn app.main:app --reload --port 8000
+   ```
+3. Open **http://localhost:5173** in your browser
+
+### Environment Variables
+
+**Frontend** (`.env` in root directory):
+
+```env
+VITE_API_URL=http://localhost:8000          # Backend URL (default)
+VITE_GOOGLE_CLIENT_ID=your_client_id        # For Google Slides integration (optional)
+```
+
+**Backend** (`backend/.env`):
+
+```env
+GEMINI_API_KEY=your_api_key_here            # Required
+GEMINI_MODEL=gemini-3-flash-preview         # Optional (default shown)
+CHARTS_DIR=static/charts                    # Optional (default shown)
+```
+
+### Running Tests
+
+**Frontend Tests:**
+
+```bash
+npm test                  # Run tests in watch mode
+npm run test:coverage     # Generate coverage report
+npm run test:e2e          # Run Cypress E2E tests
+npm run test:e2e:open     # Open Cypress Test Runner
+```
+
+**Backend Tests:**
+
+```bash
+cd backend
+source venv/bin/activate
+pytest                                        # Run all tests
+pytest --cov=app --cov-report=term-missing   # With coverage
+pytest tests/unit/test_schemas.py            # Run specific file
+pytest -k "test_function_name"               # Run tests matching pattern
+```
+
+**Linting:**
+
+```bash
+cd backend
+ruff check .           # Check code
+ruff check --fix .     # Auto-fix issues
+```
+
+### Building for Production
+
+```bash
+# Frontend
+npm run build          # Output to dist/
+
+# Backend serves the built frontend automatically
+# Just deploy the entire project with both frontend dist/ and backend/
+```
 
 ## Usage
 
