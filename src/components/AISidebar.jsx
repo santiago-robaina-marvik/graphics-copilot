@@ -434,7 +434,7 @@ function AISidebar({
                 <div
                   key={chart.id}
                   className="gallery-item"
-                  draggable
+                  draggable={true}
                   onDragStart={(e) => {
                     e.dataTransfer.setData("chartId", chart.id.toString());
                     e.dataTransfer.effectAllowed = "copy";

@@ -99,7 +99,23 @@ function TemplateSelector({ generatedCharts, onSaveTemplate }) {
 
   const handleSave = async () => {
     if (!templateRef.current || !currentVariation) return;
+
+    // Temporarily restore full size for high-quality capture
+    const originalWidth = templateRef.current.style.width;
+    const originalHeight = templateRef.current.style.height;
+
+    templateRef.current.style.width = `${CANVAS_WIDTH}px`;
+    templateRef.current.style.height = `${CANVAS_HEIGHT}px`;
+
+    // Wait for layout to update
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     await onSaveTemplate(templateRef.current, currentVariation.layout);
+
+    // Restore scaled size
+    templateRef.current.style.width = originalWidth;
+    templateRef.current.style.height = originalHeight;
+
     handleClearTemplate();
   };
 
@@ -168,31 +184,21 @@ function TemplateSelector({ generatedCharts, onSaveTemplate }) {
           </div>
           <div className="template-canvas-container">
             <div
-              className="template-canvas-wrapper"
+              className={`template-canvas layout-${currentVariation.layout}`}
+              ref={templateRef}
               style={{
                 width: CANVAS_WIDTH * scale,
                 height: CANVAS_HEIGHT * scale,
               }}
             >
-              <div
-                className={`template-canvas layout-${currentVariation.layout}`}
-                ref={templateRef}
-                style={{
-                  width: CANVAS_WIDTH,
-                  height: CANVAS_HEIGHT,
-                  transform: `scale(${scale})`,
-                  transformOrigin: "top left",
-                }}
-              >
-                {Array.from({ length: template.slots }).map((_, index) => (
-                  <TemplateSlot
-                    key={index}
-                    slotIndex={index}
-                    chart={slotCharts[index]}
-                    onDrop={handleDrop}
-                  />
-                ))}
-              </div>
+              {Array.from({ length: template.slots }).map((_, index) => (
+                <TemplateSlot
+                  key={index}
+                  slotIndex={index}
+                  chart={slotCharts[index]}
+                  onDrop={handleDrop}
+                />
+              ))}
             </div>
           </div>
           <div className="template-overlay-hint">
@@ -207,17 +213,23 @@ function TemplateSelector({ generatedCharts, onSaveTemplate }) {
 function TemplateSlot({ slotIndex, chart, onDrop }) {
   const [isDragOver, setIsDragOver] = useState(false);
 
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragOver(true);
   };
 
-  const handleDragLeave = () => {
+  const handleDragLeave = (e) => {
     setIsDragOver(false);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
     const chartId = parseInt(e.dataTransfer.getData("chartId"), 10);
     if (chartId) {
@@ -228,6 +240,7 @@ function TemplateSlot({ slotIndex, chart, onDrop }) {
   return (
     <div
       className={`template-slot ${isDragOver ? "drag-over" : ""} ${chart ? "filled" : ""}`}
+      onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
