@@ -31,6 +31,10 @@ function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [chartTheme, setChartTheme] = useState(() => {
+    return localStorage.getItem("chartTheme") || "meli_dark";
+  });
+
   // Persist slidesUrl to localStorage
   useEffect(() => {
     localStorage.setItem("slidesUrl", slidesUrl);
@@ -54,6 +58,11 @@ function App() {
       localStorage.removeItem("activeUserData");
     }
   }, [userData]);
+
+  // Persist chartTheme to localStorage
+  useEffect(() => {
+    localStorage.setItem("chartTheme", chartTheme);
+  }, [chartTheme]);
 
   const handleChartGenerated = (chart) => {
     setGeneratedCharts((prev) => [...prev, chart]);
@@ -129,6 +138,8 @@ function App() {
             onChartDeleted={handleChartDeleted}
             generatedCharts={generatedCharts}
             userData={userData}
+            chartTheme={chartTheme}
+            onThemeChange={setChartTheme}
           />
         </div>
       ) : (

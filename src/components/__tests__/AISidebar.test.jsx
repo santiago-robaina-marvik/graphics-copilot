@@ -33,6 +33,8 @@ describe("AISidebar", () => {
     onChartDeleted: vi.fn(),
     generatedCharts: [],
     userData: null,
+    chartTheme: "meli_dark",
+    onThemeChange: vi.fn(),
   };
 
   beforeEach(() => {
@@ -111,6 +113,7 @@ describe("AISidebar", () => {
       "Create a bar chart",
       "test-session-id",
       null,
+      "meli_dark",
     );
   });
 

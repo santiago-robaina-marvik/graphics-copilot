@@ -5,6 +5,7 @@ import re
 from app.models.schemas import ChatRequest, ChatResponse
 from app.agent.graph import get_agent
 from app.agent.tools.dataframe import set_dataframe
+from app.agent.tools.themes import set_theme
 from app.logging_config import get_logger
 
 logger = get_logger("app.api.routes")
@@ -29,6 +30,11 @@ async def chat(request: ChatRequest):
         if request.data:
             logger.info(f"Data provided: {len(request.data)} rows")
             set_dataframe(request.data)
+
+        # Set the chart theme
+        theme_name = request.theme or "meli_dark"
+        set_theme(theme_name)
+        logger.info(f"Chart theme: {theme_name}")
 
         # Get the agent
         agent = get_agent()

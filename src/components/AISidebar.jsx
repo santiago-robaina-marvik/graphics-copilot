@@ -18,6 +18,7 @@ import {
   getOrCreateSessionId,
   resetSession,
 } from "../services/api";
+import ThemeSelector from "./ThemeSelector";
 import "./AISidebar.css";
 
 const suggestedPrompts = [
@@ -33,6 +34,8 @@ function AISidebar({
   onChartDeleted,
   generatedCharts,
   userData: externalUserData,
+  chartTheme,
+  onThemeChange,
 }) {
   // Load persisted chat messages
   const [messages, setMessages] = useState(() => {
@@ -92,8 +95,13 @@ function AISidebar({
       // Prepare data for API
       const dataToSend = userData?.data || null;
 
-      // Call backend API
-      const result = await sendChatMessage(prompt, sessionId, dataToSend);
+      // Call backend API with theme
+      const result = await sendChatMessage(
+        prompt,
+        sessionId,
+        dataToSend,
+        chartTheme,
+      );
 
       const chartId = Date.now();
       const chartUrl = result.chart_url
@@ -318,6 +326,11 @@ function AISidebar({
               ))}
             </div>
           )}
+
+          <ThemeSelector
+            selectedTheme={chartTheme}
+            onThemeChange={onThemeChange}
+          />
 
           <div className="input-container">
             <div className="input-wrapper">

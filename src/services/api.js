@@ -19,7 +19,12 @@ export function resetSession() {
   return newSessionId;
 }
 
-export async function sendChatMessage(message, sessionId, data = null) {
+export async function sendChatMessage(
+  message,
+  sessionId,
+  data = null,
+  theme = "meli_dark",
+) {
   const response = await fetch(`${API_URL}/api/chat`, {
     method: "POST",
     headers: {
@@ -29,6 +34,7 @@ export async function sendChatMessage(message, sessionId, data = null) {
       message,
       session_id: sessionId,
       data,
+      theme,
     }),
   });
 

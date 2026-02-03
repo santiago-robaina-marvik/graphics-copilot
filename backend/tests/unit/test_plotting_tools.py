@@ -9,23 +9,34 @@ from app.agent.tools.plotting import (
     create_line_chart,
     create_pie_chart,
     create_area_chart,
-    _setup_dark_style,
+    _apply_theme,
     _save_chart,
 )
+from app.agent.tools.themes import set_theme
 
 
-class TestSetupDarkStyle:
-    """Tests for _setup_dark_style function."""
+class TestApplyTheme:
+    """Tests for _apply_theme function."""
 
-    def test_dark_style_sets_facecolor(self):
-        """_setup_dark_style should set dark figure facecolor."""
-        _setup_dark_style()
-        assert plt.rcParams["figure.facecolor"] == "#1a1a24"
+    def test_apply_theme_sets_dark_facecolor(self):
+        """_apply_theme should set figure facecolor from theme."""
+        set_theme("meli_dark")
+        _apply_theme()
+        assert plt.rcParams["figure.facecolor"] == "#0B0C20"
 
-    def test_dark_style_sets_axes_color(self):
-        """_setup_dark_style should set dark axes facecolor."""
-        _setup_dark_style()
-        assert plt.rcParams["axes.facecolor"] == "#1a1a24"
+    def test_apply_theme_sets_light_facecolor(self):
+        """_apply_theme should set light theme colors."""
+        set_theme("meli_light")
+        _apply_theme()
+        assert plt.rcParams["figure.facecolor"] == "#FFFFFF"
+        assert plt.rcParams["text.color"] == "#333333"
+
+    def test_apply_theme_sets_yellow_theme(self):
+        """_apply_theme should set yellow theme colors."""
+        set_theme("meli_yellow")
+        _apply_theme()
+        assert plt.rcParams["figure.facecolor"] == "#FFFFFF"
+        assert plt.rcParams["text.color"] == "#2D3277"
 
 
 class TestSaveChart:
@@ -37,6 +48,7 @@ class TestSaveChart:
     def test_save_chart_returns_url(self, mock_close, mock_savefig, mock_settings):
         """_save_chart should return URL path."""
         mock_settings.return_value.charts_dir = "/tmp/charts"
+        set_theme("meli_dark")
 
         # Create a figure to save
         plt.figure()
@@ -47,6 +59,23 @@ class TestSaveChart:
         assert result.endswith(".png")
         mock_savefig.assert_called_once()
         mock_close.assert_called_once()
+
+    @patch("app.agent.tools.plotting.get_settings")
+    @patch("matplotlib.pyplot.savefig")
+    @patch("matplotlib.pyplot.close")
+    def test_save_chart_uses_theme_facecolor(
+        self, mock_close, mock_savefig, mock_settings
+    ):
+        """_save_chart should use theme facecolor."""
+        mock_settings.return_value.charts_dir = "/tmp/charts"
+        set_theme("meli_light")
+        plt.figure()
+
+        _save_chart()
+
+        # Check savefig was called with light theme facecolor
+        call_kwargs = mock_savefig.call_args[1]
+        assert call_kwargs["facecolor"] == "#FFFFFF"
 
 
 class TestCreateBarChart:

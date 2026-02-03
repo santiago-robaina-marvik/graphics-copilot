@@ -8,6 +8,7 @@ from datetime import datetime
 from langchain_core.tools import tool
 
 from app.agent.tools.dataframe import get_dataframe
+from app.agent.tools.themes import get_theme
 from app.config import get_settings
 from app.logging_config import get_logger
 
@@ -17,13 +18,18 @@ logger = get_logger("app.agent.tools.plotting")
 def _save_chart() -> str:
     """Save current matplotlib figure and return the URL path."""
     settings = get_settings()
+    theme = get_theme()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     filename = f"chart_{timestamp}.png"
     filepath = Path(settings.charts_dir) / filename
 
     plt.tight_layout()
     plt.savefig(
-        filepath, dpi=150, bbox_inches="tight", facecolor="#1a1a24", edgecolor="none"
+        filepath,
+        dpi=150,
+        bbox_inches="tight",
+        facecolor=theme.figure_facecolor,
+        edgecolor="none",
     )
     plt.close()
 
@@ -31,19 +37,26 @@ def _save_chart() -> str:
     return f"/static/charts/{filename}"
 
 
-def _setup_dark_style():
-    """Apply dark theme matching frontend."""
-    plt.style.use("dark_background")
+def _apply_theme():
+    """Apply the current chart theme to matplotlib."""
+    theme = get_theme()
+
+    # Use dark_background as base for dark themes, default for light
+    if theme.figure_facecolor in ("#0B0C20", "#1a1a24"):
+        plt.style.use("dark_background")
+    else:
+        plt.style.use("default")
+
     plt.rcParams.update(
         {
-            "figure.facecolor": "#1a1a24",
-            "axes.facecolor": "#1a1a24",
-            "axes.edgecolor": "#2a2a38",
-            "axes.labelcolor": "#9090a8",
-            "text.color": "#9090a8",
-            "xtick.color": "#9090a8",
-            "ytick.color": "#9090a8",
-            "grid.color": "#2a2a38",
+            "figure.facecolor": theme.figure_facecolor,
+            "axes.facecolor": theme.axes_facecolor,
+            "axes.edgecolor": theme.edge_color,
+            "axes.labelcolor": theme.text_color,
+            "text.color": theme.text_color,
+            "xtick.color": theme.text_color,
+            "ytick.color": theme.text_color,
+            "grid.color": theme.grid_color,
             "figure.figsize": (10, 6),
         }
     )
@@ -71,15 +84,17 @@ def create_bar_chart(x_column: str, y_column: str, title: str = "Bar Chart") -> 
         logger.warning("Column not found for bar chart")
         return f"Column not found. Available: {list(df.columns)}"
 
-    _setup_dark_style()
+    _apply_theme()
+    theme = get_theme()
     fig, ax = plt.subplots()
 
-    colors = ["#3d5afe", "#7c4dff", "#00e5ff", "#00e676", "#ff9100", "#ff4081"]
+    # Cycle through theme palette colors
+    colors = theme.palette * ((len(df) // len(theme.palette)) + 1)
     ax.bar(df[x_column].astype(str), df[y_column], color=colors[: len(df)])
 
     ax.set_xlabel(x_column)
     ax.set_ylabel(y_column)
-    ax.set_title(title, color="white", fontsize=14)
+    ax.set_title(title, color=theme.text_color, fontsize=14)
     plt.xticks(rotation=45, ha="right")
 
     chart_url = _save_chart()
@@ -109,22 +124,24 @@ def create_line_chart(x_column: str, y_column: str, title: str = "Line Chart") -
         logger.warning("Column not found for line chart")
         return f"Column not found. Available: {list(df.columns)}"
 
-    _setup_dark_style()
+    _apply_theme()
+    theme = get_theme()
     fig, ax = plt.subplots()
 
+    primary_color = theme.palette[0]
     ax.plot(
         df[x_column].astype(str),
         df[y_column],
-        color="#3d5afe",
+        color=primary_color,
         linewidth=2,
         marker="o",
         markersize=6,
     )
-    ax.fill_between(range(len(df)), df[y_column], alpha=0.3, color="#3d5afe")
+    ax.fill_between(range(len(df)), df[y_column], alpha=0.3, color=primary_color)
 
     ax.set_xlabel(x_column)
     ax.set_ylabel(y_column)
-    ax.set_title(title, color="white", fontsize=14)
+    ax.set_title(title, color=theme.text_color, fontsize=14)
     plt.xticks(rotation=45, ha="right")
     ax.grid(True, alpha=0.3)
 
@@ -160,21 +177,12 @@ def create_pie_chart(
     # Limit to top 10 for readability
     plot_df = df.nlargest(10, values_column) if len(df) > 10 else df
 
-    _setup_dark_style()
+    _apply_theme()
+    theme = get_theme()
     fig, ax = plt.subplots()
 
-    colors = [
-        "#3d5afe",
-        "#7c4dff",
-        "#00e5ff",
-        "#00e676",
-        "#ff9100",
-        "#ff4081",
-        "#536dfe",
-        "#b388ff",
-        "#84ffff",
-        "#b9f6ca",
-    ]
+    # Extend palette if needed for pie slices
+    colors = theme.palette * ((len(plot_df) // len(theme.palette)) + 1)
 
     wedges, texts, autotexts = ax.pie(
         plot_df[values_column],
@@ -182,10 +190,10 @@ def create_pie_chart(
         colors=colors[: len(plot_df)],
         autopct="%1.1f%%",
         pctdistance=0.75,
-        textprops={"color": "white", "fontsize": 10},
+        textprops={"color": theme.text_color, "fontsize": 10},
     )
 
-    ax.set_title(title, color="white", fontsize=14)
+    ax.set_title(title, color=theme.text_color, fontsize=14)
 
     chart_url = _save_chart()
     logger.info(f"Pie chart created with {len(plot_df)} slices")
@@ -214,18 +222,22 @@ def create_area_chart(x_column: str, y_column: str, title: str = "Area Chart") -
         logger.warning("Column not found for area chart")
         return f"Column not found. Available: {list(df.columns)}"
 
-    _setup_dark_style()
+    _apply_theme()
+    theme = get_theme()
     fig, ax = plt.subplots()
 
+    primary_color = theme.palette[0]
+    secondary_color = theme.palette[1] if len(theme.palette) > 1 else primary_color
+
     x_vals = range(len(df))
-    ax.fill_between(x_vals, df[y_column], alpha=0.7, color="#3d5afe")
-    ax.plot(x_vals, df[y_column], color="#7c4dff", linewidth=2)
+    ax.fill_between(x_vals, df[y_column], alpha=0.7, color=primary_color)
+    ax.plot(x_vals, df[y_column], color=secondary_color, linewidth=2)
 
     ax.set_xticks(x_vals)
     ax.set_xticklabels(df[x_column].astype(str), rotation=45, ha="right")
     ax.set_xlabel(x_column)
     ax.set_ylabel(y_column)
-    ax.set_title(title, color="white", fontsize=14)
+    ax.set_title(title, color=theme.text_color, fontsize=14)
     ax.grid(True, alpha=0.3)
 
     chart_url = _save_chart()
