@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import {
   Send,
   Sparkles,
@@ -233,7 +234,7 @@ function AISidebar({
                   </div>
                 )}
                 <div className="message-content">
-                  <p>{msg.content}</p>
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
                   {msg.chartImage && (
                     <div className="message-chart">
                       <div className="chart-preview">
