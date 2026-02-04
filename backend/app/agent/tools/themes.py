@@ -64,17 +64,3 @@ def set_theme(name: str) -> None:
 def get_theme() -> ChartTheme:
     """Get the current chart theme."""
     return THEMES[_current_theme]
-
-
-def get_available_themes() -> list[dict]:
-    """Get list of available themes with metadata."""
-    return [
-        {
-            "name": theme.name,
-            "display_name": theme.display_name,
-            "background": theme.figure_facecolor,
-            "text_color": theme.text_color,
-            "palette": theme.palette,
-        }
-        for theme in THEMES.values()
-    ]

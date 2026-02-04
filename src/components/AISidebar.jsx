@@ -58,7 +58,6 @@ function AISidebar({
   const [copiedCharts, setCopiedCharts] = useState({});
   const [userData, setUserData] = useState(null);
   const [sessionId] = useState(() => getOrCreateSessionId());
-  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
   // Persist chat messages to localStorage
@@ -89,7 +88,6 @@ function AISidebar({
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsGenerating(true);
-    setError(null);
 
     try {
       // Prepare data for API
@@ -127,7 +125,6 @@ function AISidebar({
       }
     } catch (err) {
       console.error("Chat error:", err);
-      setError(err.message);
       const errorMessage = {
         type: "assistant",
         content: `Sorry, I encountered an error: ${err.message}. Please make sure the backend server is running.`,

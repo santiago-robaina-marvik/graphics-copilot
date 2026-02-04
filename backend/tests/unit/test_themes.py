@@ -7,7 +7,6 @@ from app.agent.tools.themes import (
     ChartTheme,
     set_theme,
     get_theme,
-    get_available_themes,
 )
 
 
@@ -82,33 +81,3 @@ class TestGetTheme:
         theme = get_theme()
         assert theme.name == "meli_yellow"
         assert isinstance(theme, ChartTheme)
-
-
-class TestGetAvailableThemes:
-    """Tests for get_available_themes function."""
-
-    def test_returns_all_themes(self):
-        """get_available_themes should return all themes."""
-        themes = get_available_themes()
-        assert len(themes) == 3
-
-    def test_theme_format(self):
-        """get_available_themes should return correct format."""
-        themes = get_available_themes()
-
-        for theme in themes:
-            assert "name" in theme
-            assert "display_name" in theme
-            assert "background" in theme
-            assert "text_color" in theme
-            assert "palette" in theme
-            assert isinstance(theme["palette"], list)
-
-    def test_contains_meli_dark(self):
-        """get_available_themes should include meli_dark."""
-        themes = get_available_themes()
-        dark_theme = next((t for t in themes if t["name"] == "meli_dark"), None)
-
-        assert dark_theme is not None
-        assert dark_theme["display_name"] == "Meli Dark"
-        assert dark_theme["background"] == "#0B0C20"

@@ -203,11 +203,17 @@ The AI detects chart type from your prompt:
 
 ## Tech Stack
 
+**Frontend:**
 - React + Vite
-- Recharts for data visualization
 - PapaParse for CSV parsing
 - html-to-image for chart export
 - Lucide React for icons
+
+**Backend:**
+- Python FastAPI + LangGraph
+- Google Gemini AI for natural language processing
+- Seaborn + Matplotlib for chart generation
+- Pandas for data manipulation
 
 ## Sample Data
 
