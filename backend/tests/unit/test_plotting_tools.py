@@ -2,17 +2,18 @@
 
 from unittest.mock import patch
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from app.agent.tools.dataframe import set_dataframe
 from app.agent.tools.plotting import (
     create_bar_chart,
     create_line_chart,
-    create_pie_chart,
+    create_distribution_chart,
     create_area_chart,
     _apply_theme,
     _save_chart,
 )
-from app.agent.tools.themes import set_theme
+from app.agent.tools.themes import set_theme, get_theme
 
 
 class TestApplyTheme:
@@ -37,6 +38,16 @@ class TestApplyTheme:
         _apply_theme()
         assert plt.rcParams["figure.facecolor"] == "#FFFFFF"
         assert plt.rcParams["text.color"] == "#2D3277"
+
+    def test_apply_theme_sets_seaborn_palette(self):
+        """_apply_theme should set seaborn palette from theme."""
+        set_theme("meli_dark")
+        _apply_theme()
+        theme = get_theme()
+        # Verify seaborn palette was set (get current palette)
+        current_palette = sns.color_palette()
+        # Palette should have same number of colors as theme
+        assert len(current_palette) == len(theme.palette)
 
 
 class TestSaveChart:
@@ -122,32 +133,32 @@ class TestCreateLineChart:
         assert "Line chart created" in result
 
 
-class TestCreatePieChart:
-    """Tests for create_pie_chart tool."""
+class TestCreateDistributionChart:
+    """Tests for create_distribution_chart tool."""
 
     @patch("app.agent.tools.plotting._save_chart")
-    def test_create_pie_chart_success(self, mock_save, sample_dataframe):
-        """create_pie_chart should generate chart successfully."""
+    def test_create_distribution_chart_success(self, mock_save, sample_dataframe):
+        """create_distribution_chart should generate chart successfully."""
         mock_save.return_value = "/static/charts/test.png"
         set_dataframe(sample_dataframe.to_dict(orient="records"))
 
-        result = create_pie_chart.invoke(
+        result = create_distribution_chart.invoke(
             {"labels_column": "Product", "values_column": "Revenue"}
         )
 
-        assert "Pie chart created" in result
+        assert "Distribution chart created" in result
 
     @patch("app.agent.tools.plotting._save_chart")
-    def test_create_pie_chart_limits_to_10(self, mock_save, large_dataframe):
-        """create_pie_chart should limit to top 10 values."""
+    def test_create_distribution_chart_limits_to_10(self, mock_save, large_dataframe):
+        """create_distribution_chart should limit to top 10 values."""
         mock_save.return_value = "/static/charts/test.png"
         set_dataframe(large_dataframe.to_dict(orient="records"))
 
-        result = create_pie_chart.invoke(
+        result = create_distribution_chart.invoke(
             {"labels_column": "ID", "values_column": "Value"}
         )
 
-        assert "Pie chart created" in result
+        assert "Distribution chart created" in result
 
 
 class TestCreateAreaChart:

@@ -3,6 +3,7 @@ import matplotlib
 matplotlib.use("Agg")  # Non-interactive backend
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 from pathlib import Path
 from datetime import datetime
 from langchain_core.tools import tool
@@ -38,7 +39,7 @@ def _save_chart() -> str:
 
 
 def _apply_theme():
-    """Apply the current chart theme to matplotlib."""
+    """Apply the current chart theme to matplotlib and seaborn."""
     theme = get_theme()
 
     # Use dark_background as base for dark themes, default for light
@@ -47,6 +48,7 @@ def _apply_theme():
     else:
         plt.style.use("default")
 
+    # Apply theme to matplotlib rcParams
     plt.rcParams.update(
         {
             "figure.facecolor": theme.figure_facecolor,
@@ -60,6 +62,9 @@ def _apply_theme():
             "figure.figsize": (10, 6),
         }
     )
+
+    # Set seaborn palette from theme
+    sns.set_palette(theme.palette)
 
 
 @tool
@@ -88,9 +93,16 @@ def create_bar_chart(x_column: str, y_column: str, title: str = "Bar Chart") -> 
     theme = get_theme()
     fig, ax = plt.subplots()
 
-    # Cycle through theme palette colors
-    colors = theme.palette * ((len(df) // len(theme.palette)) + 1)
-    ax.bar(df[x_column].astype(str), df[y_column], color=colors[: len(df)])
+    # Use seaborn barplot
+    sns.barplot(
+        data=df,
+        x=x_column,
+        y=y_column,
+        hue=x_column,
+        palette=theme.palette,
+        legend=False,
+        ax=ax,
+    )
 
     ax.set_xlabel(x_column)
     ax.set_ylabel(y_column)
@@ -128,16 +140,17 @@ def create_line_chart(x_column: str, y_column: str, title: str = "Line Chart") -
     theme = get_theme()
     fig, ax = plt.subplots()
 
-    primary_color = theme.palette[0]
-    ax.plot(
-        df[x_column].astype(str),
-        df[y_column],
-        color=primary_color,
-        linewidth=2,
+    # Use seaborn lineplot with markers
+    sns.lineplot(
+        data=df,
+        x=x_column,
+        y=y_column,
         marker="o",
         markersize=6,
+        linewidth=2,
+        color=theme.palette[0],
+        ax=ax,
     )
-    ax.fill_between(range(len(df)), df[y_column], alpha=0.3, color=primary_color)
 
     ax.set_xlabel(x_column)
     ax.set_ylabel(y_column)
@@ -151,53 +164,66 @@ def create_line_chart(x_column: str, y_column: str, title: str = "Line Chart") -
 
 
 @tool
-def create_pie_chart(
-    labels_column: str, values_column: str, title: str = "Pie Chart"
+def create_distribution_chart(
+    labels_column: str, values_column: str, title: str = "Distribution Chart"
 ) -> str:
     """
-    Create a pie chart showing distribution/proportions.
+    Create a horizontal bar chart showing distribution/proportions.
+    Shows percentages for each category. Good for comparing parts of a whole.
 
     Args:
-        labels_column: Column for slice labels
-        values_column: Column for slice values
+        labels_column: Column for category labels
+        values_column: Column for values
         title: Chart title
     """
     logger.info(
-        f"Tool: create_pie_chart(labels='{labels_column}', values='{values_column}', title='{title}')"
+        f"Tool: create_distribution_chart(labels='{labels_column}', values='{values_column}', title='{title}')"
     )
     df = get_dataframe()
     if df is None:
-        logger.warning("No data loaded for pie chart")
+        logger.warning("No data loaded for distribution chart")
         return "No data loaded. Cannot create chart."
 
     if labels_column not in df.columns or values_column not in df.columns:
-        logger.warning("Column not found for pie chart")
+        logger.warning("Column not found for distribution chart")
         return f"Column not found. Available: {list(df.columns)}"
 
     # Limit to top 10 for readability
-    plot_df = df.nlargest(10, values_column) if len(df) > 10 else df
+    plot_df = df.nlargest(10, values_column) if len(df) > 10 else df.copy()
+
+    # Calculate percentages
+    total = plot_df[values_column].sum()
+    plot_df = plot_df.copy()
+    plot_df["_percentage"] = (plot_df[values_column] / total * 100).round(1)
 
     _apply_theme()
     theme = get_theme()
     fig, ax = plt.subplots()
 
-    # Extend palette if needed for pie slices
-    colors = theme.palette * ((len(plot_df) // len(theme.palette)) + 1)
-
-    wedges, texts, autotexts = ax.pie(
-        plot_df[values_column],
-        labels=plot_df[labels_column],
-        colors=colors[: len(plot_df)],
-        autopct="%1.1f%%",
-        pctdistance=0.75,
-        textprops={"color": theme.text_color, "fontsize": 10},
+    # Use seaborn horizontal barplot for proportions
+    sns.barplot(
+        data=plot_df,
+        y=labels_column,
+        x=values_column,
+        hue=labels_column,
+        palette=theme.palette,
+        legend=False,
+        ax=ax,
     )
 
+    # Add percentage labels
+    for i, (value, pct) in enumerate(
+        zip(plot_df[values_column], plot_df["_percentage"])
+    ):
+        ax.text(value + total * 0.01, i, f"{pct}%", va="center", color=theme.text_color)
+
+    ax.set_xlabel(values_column)
+    ax.set_ylabel(labels_column)
     ax.set_title(title, color=theme.text_color, fontsize=14)
 
     chart_url = _save_chart()
-    logger.info(f"Pie chart created with {len(plot_df)} slices")
-    return f"Pie chart created: {chart_url}"
+    logger.info(f"Distribution chart created with {len(plot_df)} categories")
+    return f"Distribution chart created: {chart_url}"
 
 
 @tool
@@ -226,14 +252,25 @@ def create_area_chart(x_column: str, y_column: str, title: str = "Area Chart") -
     theme = get_theme()
     fig, ax = plt.subplots()
 
-    primary_color = theme.palette[0]
-    secondary_color = theme.palette[1] if len(theme.palette) > 1 else primary_color
+    # Use seaborn lineplot and fill
+    sns.lineplot(
+        data=df,
+        x=x_column,
+        y=y_column,
+        color=theme.palette[1] if len(theme.palette) > 1 else theme.palette[0],
+        linewidth=2,
+        ax=ax,
+    )
 
-    x_vals = range(len(df))
-    ax.fill_between(x_vals, df[y_column], alpha=0.7, color=primary_color)
-    ax.plot(x_vals, df[y_column], color=secondary_color, linewidth=2)
+    # Fill area under the line
+    ax.fill_between(
+        range(len(df)),
+        df[y_column],
+        alpha=0.7,
+        color=theme.palette[0],
+    )
 
-    ax.set_xticks(x_vals)
+    ax.set_xticks(range(len(df)))
     ax.set_xticklabels(df[x_column].astype(str), rotation=45, ha="right")
     ax.set_xlabel(x_column)
     ax.set_ylabel(y_column)
@@ -249,6 +286,6 @@ def create_area_chart(x_column: str, y_column: str, title: str = "Area Chart") -
 plotting_tools = [
     create_bar_chart,
     create_line_chart,
-    create_pie_chart,
+    create_distribution_chart,  # renamed from create_pie_chart
     create_area_chart,
 ]
