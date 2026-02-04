@@ -6,7 +6,6 @@ import {
   Download,
   BarChart3,
   LineChart,
-  PieChart,
   TrendingUp,
   Image,
   Copy,
@@ -25,7 +24,6 @@ import "./AISidebar.css";
 const suggestedPrompts = [
   { icon: BarChart3, text: "Create a bar chart comparing Q1 sales" },
   { icon: LineChart, text: "Show monthly revenue trend" },
-  { icon: PieChart, text: "Make a pie chart of market share" },
   { icon: TrendingUp, text: "Visualize growth over time" },
 ];
 

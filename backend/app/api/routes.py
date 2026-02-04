@@ -66,6 +66,9 @@ async def chat(request: ChatRequest):
         else:
             response_text = content
 
+        # Strip markdown image syntax from response since charts are displayed separately
+        response_text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", response_text).strip()
+
         # Check if a chart was generated (look for chart URL in tool results)
         chart_url = None
         for msg in reversed(messages):
