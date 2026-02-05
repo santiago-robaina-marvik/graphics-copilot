@@ -26,14 +26,16 @@ An AI-powered presentation assistant that helps you create charts and visualizat
 # Install dependencies
 npm install
 
-# Create environment file (optional)
-# Add VITE_GOOGLE_CLIENT_ID for Google Slides integration
-cp .env.example .env  # If you have one, or create manually
-
 # Start development server
 npm run dev
 ```
 
+**Optional**: Create a `.env` file in the root directory if you need to configure the API URL or Google Slides integration:
+
+```env
+VITE_API_URL=http://localhost:8000     # Backend URL (default, only change if needed)
+VITE_GOOGLE_CLIENT_ID=your_client_id   # For Google Slides OAuth (optional)
+```
 
 ### 2. Backend Setup
 
@@ -79,20 +81,18 @@ You need **both** servers running:
 
 ### Environment Variables
 
-**Frontend** (`.env` in root directory):
-
-```env
-VITE_API_URL=http://localhost:8000          # Backend URL (default)
-VITE_GOOGLE_CLIENT_ID=your_client_id        # For Google Slides integration (optional)
-```
-
-**Backend** (`backend/.env`):
+**Backend** (`backend/.env`) - Required:
 
 ```env
 GEMINI_API_KEY=your_api_key_here            # Required
 GEMINI_MODEL=gemini-3-flash-preview         # Optional (default shown)
 CHARTS_DIR=static/charts                    # Optional (default shown)
+
 ```
+
+---
+
+
 
 ### Running Tests
 
@@ -183,13 +183,13 @@ Your CSV should have:
 - **Numeric columns** for values to plot
 - **Text column** for labels (product names, dates, etc.)
 
-Example:
+Example (from `public/sample-data.csv`):
 
 ```csv
-Month,Revenue,Expenses
-January,45000,32000
-February,52000,35000
-March,48000,33000
+Month,Revenue,Expenses,Profit
+January,45000,32000,13000
+February,52000,35000,17000
+March,48000,33000,15000
 ```
 
 ## Chart Types
@@ -204,12 +204,14 @@ The AI detects chart type from your prompt:
 ## Tech Stack
 
 **Frontend:**
+
 - React + Vite
 - PapaParse for CSV parsing
 - html-to-image for chart export
 - Lucide React for icons
 
 **Backend:**
+
 - Python FastAPI + LangGraph
 - Google Gemini AI for natural language processing
 - Seaborn + Matplotlib for chart generation
