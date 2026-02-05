@@ -184,3 +184,31 @@ export async function restoreChart(filename) {
 
   return response.json();
 }
+
+/**
+ * Upload a template layout image as a chart.
+ * @param {string} imageData - Base64 encoded PNG (data URL from html-to-image)
+ * @param {string} layoutType - Layout type (e.g., "grid", "half-left")
+ * @returns {Promise<{success: boolean, chart_url: string, chart_metadata: object}>}
+ */
+export async function uploadChart(imageData, layoutType) {
+  const response = await fetch(`${API_URL}/api/charts/upload`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      image_data: imageData,
+      layout_type: layoutType,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Unknown error" }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  return response.json();
+}

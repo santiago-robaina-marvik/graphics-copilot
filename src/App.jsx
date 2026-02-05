@@ -11,6 +11,7 @@ import {
   listTrash,
   restoreChart,
   getChartImageUrl,
+  uploadChart,
 } from "./services/api";
 import "./App.css";
 
@@ -159,6 +160,7 @@ function App() {
         pixelRatio: 2, // 2x for retina quality (outputs 1920x1080)
         width: 960,
         height: 540,
+        skipFonts: true, // Skip font embedding to avoid CORS errors with Google Fonts
         style: {
           transform: "none",
           background: "transparent",
@@ -168,10 +170,14 @@ function App() {
       // Restore original transform
       templateElement.style.transform = originalTransform;
 
+      // Upload to backend
+      const result = await uploadChart(dataUrl, templateType);
+
       const newChart = {
         id: Date.now(),
         type: `template-${templateType}`,
-        imageUrl: dataUrl,
+        imageUrl: getChartImageUrl(result.chart_url),
+        metadata: result.chart_metadata,
       };
 
       setGeneratedCharts((prev) => [...prev, newChart]);

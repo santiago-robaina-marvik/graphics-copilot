@@ -15,6 +15,8 @@ from app.models.schemas import (
     TrashItem,
     TrashListResponse,
     RestoreChartResponse,
+    UploadChartRequest,
+    UploadChartResponse,
 )
 from app.agent.graph import get_agent
 from app.agent.tools.dataframe import set_dataframe, set_data_source
@@ -488,4 +490,73 @@ async def restore_chart(filename: str):
         message="Chart restored successfully",
         chart_url=chart_url,
         chart_metadata=metadata if metadata else None,
+    )
+
+
+@router.post("/charts/upload", response_model=UploadChartResponse)
+async def upload_chart(request: UploadChartRequest):
+    """Upload a template layout image as a chart."""
+    import base64
+    import time
+
+    settings = get_settings()
+    charts_path = Path(settings.charts_dir)
+    charts_path.mkdir(parents=True, exist_ok=True)
+
+    # Strip data URL prefix if present
+    image_data = request.image_data
+    if image_data.startswith("data:"):
+        # Format: data:image/png;base64,XXXX
+        try:
+            image_data = image_data.split(",", 1)[1]
+        except IndexError:
+            raise HTTPException(status_code=400, detail="Invalid data URL format")
+
+    # Decode base64
+    try:
+        png_bytes = base64.b64decode(image_data)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid base64 image data")
+
+    # Validate PNG magic bytes
+    if not png_bytes.startswith(b"\x89PNG"):
+        raise HTTPException(status_code=400, detail="Invalid PNG image")
+
+    # Generate filename
+    timestamp = int(time.time() * 1000)
+    filename = f"chart_layout_{timestamp}"
+    png_path = charts_path / f"{filename}.png"
+    json_path = charts_path / f"{filename}.json"
+
+    # Write PNG file
+    try:
+        with open(png_path, "wb") as f:
+            f.write(png_bytes)
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save image: {e}")
+
+    # Create metadata
+    metadata = {
+        "chart_type": "layout",
+        "layout_type": request.layout_type,
+        "source": "template_editor",
+        "created_at": datetime.now().isoformat(),
+    }
+
+    # Write metadata JSON
+    try:
+        with open(json_path, "w") as f:
+            json.dump(metadata, f, indent=2)
+    except OSError as e:
+        # Clean up PNG if JSON write fails
+        png_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=500, detail=f"Failed to save metadata: {e}")
+
+    chart_url = f"/static/charts/{filename}.png"
+    logger.info(f"Uploaded layout chart: {filename}")
+
+    return UploadChartResponse(
+        success=True,
+        chart_url=chart_url,
+        chart_metadata=metadata,
     )

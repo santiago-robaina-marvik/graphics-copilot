@@ -60,3 +60,14 @@ class RestoreChartResponse(BaseModel):
     message: str
     chart_url: str
     chart_metadata: Optional[dict[str, Any]] = None
+
+
+class UploadChartRequest(BaseModel):
+    image_data: str  # Base64 encoded PNG (with or without data URL prefix)
+    layout_type: str  # e.g., "grid", "half-left", "split-horizontal"
+
+
+class UploadChartResponse(BaseModel):
+    success: bool
+    chart_url: str
+    chart_metadata: dict[str, Any]
