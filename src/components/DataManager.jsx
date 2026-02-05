@@ -10,6 +10,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Papa from "papaparse";
+import { parseSheetUrl } from "../services/api";
 import "./DataManager.css";
 
 function DataManager({ userData, onDataUpdate }) {
@@ -228,7 +229,13 @@ function DataManager({ userData, onDataUpdate }) {
   };
 
   const handleUseDataset = (dataset) => {
-    onDataUpdate(dataset.data);
+    // Extract sheet source if this is a Google Sheets dataset
+    const sheetSource =
+      dataset.source === "google-sheets" && dataset.sourceUrl
+        ? parseSheetUrl(dataset.sourceUrl)
+        : null;
+
+    onDataUpdate(dataset.data, sheetSource);
     alert(`"${dataset.name}" is now active for chart generation`);
   };
 

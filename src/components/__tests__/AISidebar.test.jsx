@@ -114,6 +114,7 @@ describe("AISidebar", () => {
       "test-session-id",
       null,
       "meli_dark",
+      undefined, // activeSheetSource
     );
   });
 

@@ -19,11 +19,30 @@ export function resetSession() {
   return newSessionId;
 }
 
+/**
+ * Extract sheet_id and gid from a Google Sheets URL.
+ * @param {string} url - Google Sheets URL
+ * @returns {{sheet_id: string, sheet_gid: string} | null}
+ */
+export function parseSheetUrl(url) {
+  if (!url) return null;
+
+  const sheetMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (!sheetMatch) return null;
+
+  const sheet_id = sheetMatch[1];
+  const gidMatch = url.match(/[#&?]gid=([0-9]+)/);
+  const sheet_gid = gidMatch ? gidMatch[1] : "0";
+
+  return { sheet_id, sheet_gid };
+}
+
 export async function sendChatMessage(
   message,
   sessionId,
   data = null,
   theme = "meli_dark",
+  sheetSource = null,
 ) {
   const response = await fetch(`${API_URL}/api/chat`, {
     method: "POST",
@@ -35,6 +54,8 @@ export async function sendChatMessage(
       session_id: sessionId,
       data,
       theme,
+      sheet_id: sheetSource?.sheet_id || null,
+      sheet_gid: sheetSource?.sheet_gid || null,
     }),
   });
 
@@ -61,4 +82,34 @@ export async function checkHealth() {
   } catch {
     return false;
   }
+}
+
+export async function regenerateChart(metadata, theme = "meli_dark") {
+  const response = await fetch(`${API_URL}/api/regenerate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chart_type: metadata.chart_type,
+      x_column: metadata.x_column,
+      y_column: metadata.y_column,
+      labels_column: metadata.labels_column,
+      values_column: metadata.values_column,
+      title: metadata.title,
+      theme,
+      // Include data source for fresh data fetching
+      sheet_id: metadata.data_source?.sheet_id || null,
+      sheet_gid: metadata.data_source?.sheet_gid || null,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Unknown error" }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  return response.json();
 }

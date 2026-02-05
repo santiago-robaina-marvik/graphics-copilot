@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.schemas import ChatRequest, ChatResponse
+from app.models.schemas import ChatRequest, ChatResponse, RegenerateRequest
 
 
 class TestChatRequest:
@@ -38,6 +38,34 @@ class TestChatRequest:
         request = ChatRequest(message="", session_id="test-123")
         assert request.message == ""
 
+    def test_with_sheet_source(self):
+        """Should accept sheet_id and sheet_gid."""
+        req = ChatRequest(
+            message="create chart",
+            session_id="sess1",
+            sheet_id="abc123",
+            sheet_gid="42",
+        )
+        assert req.sheet_id == "abc123"
+        assert req.sheet_gid == "42"
+
+    def test_sheet_gid_defaults_to_zero(self):
+        """Should default sheet_gid to '0'."""
+        req = ChatRequest(message="hello", session_id="sess1")
+        assert req.sheet_id is None
+        assert req.sheet_gid == "0"
+
+    def test_with_data_and_sheet(self):
+        """Should accept both data and sheet source."""
+        req = ChatRequest(
+            message="create chart",
+            session_id="sess1",
+            data=[{"a": 1}],
+            sheet_id="abc123",
+        )
+        assert req.data == [{"a": 1}]
+        assert req.sheet_id == "abc123"
+
 
 class TestChatResponse:
     """Tests for ChatResponse schema."""
@@ -56,3 +84,39 @@ class TestChatResponse:
             session_id="test-123",
         )
         assert response.chart_url == "/static/charts/chart_123.png"
+
+
+class TestRegenerateRequest:
+    """Tests for RegenerateRequest schema."""
+
+    def test_minimal_request(self):
+        """Should accept minimal valid request."""
+        req = RegenerateRequest(chart_type="bar")
+        assert req.chart_type == "bar"
+        assert req.sheet_id is None
+        assert req.sheet_gid == "0"
+
+    def test_with_sheet_source(self):
+        """Should accept sheet_id and sheet_gid."""
+        req = RegenerateRequest(
+            chart_type="bar",
+            x_column="category",
+            y_column="value",
+            sheet_id="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+            sheet_gid="123",
+        )
+        assert req.sheet_id == "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+        assert req.sheet_gid == "123"
+
+    def test_sheet_gid_defaults_to_zero(self):
+        """Should default sheet_gid to '0' when only sheet_id provided."""
+        req = RegenerateRequest(
+            chart_type="bar",
+            sheet_id="some_sheet_id",
+        )
+        assert req.sheet_gid == "0"
+
+    def test_invalid_theme_raises(self):
+        """Should reject invalid theme values."""
+        with pytest.raises(ValidationError):
+            RegenerateRequest(chart_type="bar", theme="invalid_theme")

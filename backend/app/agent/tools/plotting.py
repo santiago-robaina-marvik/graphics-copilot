@@ -1,3 +1,4 @@
+import json
 import matplotlib
 
 matplotlib.use("Agg")  # Non-interactive backend
@@ -8,7 +9,7 @@ from pathlib import Path
 from datetime import datetime
 from langchain_core.tools import tool
 
-from app.agent.tools.dataframe import get_dataframe
+from app.agent.tools.dataframe import get_dataframe, get_data_source
 from app.agent.tools.themes import get_theme
 from app.config import get_settings
 from app.logging_config import get_logger
@@ -16,8 +17,8 @@ from app.logging_config import get_logger
 logger = get_logger("app.agent.tools.plotting")
 
 
-def _save_chart() -> str:
-    """Save current matplotlib figure and return the URL path."""
+def _save_chart(metadata: dict) -> tuple[str, dict]:
+    """Save current matplotlib figure and metadata, return the URL path and metadata."""
     settings = get_settings()
     theme = get_theme()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
@@ -34,8 +35,23 @@ def _save_chart() -> str:
     )
     plt.close()
 
+    # Save metadata sidecar file
+    chart_url = f"/static/charts/{filename}"
+    full_metadata = {
+        **metadata,
+        "theme": theme.name,
+        "created_at": datetime.now().isoformat(),
+        "chart_url": chart_url,
+    }
+
+    metadata_path = filepath.with_suffix(".json")
+    with open(metadata_path, "w") as f:
+        json.dump(full_metadata, f, indent=2)
+
     logger.info(f"Chart saved: {filepath}")
-    return f"/static/charts/{filename}"
+    logger.info(f"Metadata saved: {metadata_path}")
+
+    return chart_url, full_metadata
 
 
 def _apply_theme():
@@ -109,7 +125,17 @@ def create_bar_chart(x_column: str, y_column: str, title: str = "Bar Chart") -> 
     ax.set_title(title, color=theme.text_color, fontsize=14)
     plt.xticks(rotation=45, ha="right")
 
-    chart_url = _save_chart()
+    data_source = get_data_source()
+    metadata = {
+        "chart_type": "bar",
+        "x_column": x_column,
+        "y_column": y_column,
+        "title": title,
+        "row_count": len(df),
+    }
+    if data_source:
+        metadata["data_source"] = data_source
+    chart_url, _ = _save_chart(metadata)
     logger.info(f"Bar chart created with {len(df)} bars")
     return f"Bar chart created: {chart_url}"
 
@@ -158,7 +184,17 @@ def create_line_chart(x_column: str, y_column: str, title: str = "Line Chart") -
     plt.xticks(rotation=45, ha="right")
     ax.grid(True, alpha=0.3)
 
-    chart_url = _save_chart()
+    data_source = get_data_source()
+    metadata = {
+        "chart_type": "line",
+        "x_column": x_column,
+        "y_column": y_column,
+        "title": title,
+        "row_count": len(df),
+    }
+    if data_source:
+        metadata["data_source"] = data_source
+    chart_url, _ = _save_chart(metadata)
     logger.info(f"Line chart created with {len(df)} points")
     return f"Line chart created: {chart_url}"
 
@@ -221,7 +257,17 @@ def create_distribution_chart(
     ax.set_ylabel(labels_column)
     ax.set_title(title, color=theme.text_color, fontsize=14)
 
-    chart_url = _save_chart()
+    data_source = get_data_source()
+    metadata = {
+        "chart_type": "distribution",
+        "labels_column": labels_column,
+        "values_column": values_column,
+        "title": title,
+        "row_count": len(plot_df),
+    }
+    if data_source:
+        metadata["data_source"] = data_source
+    chart_url, _ = _save_chart(metadata)
     logger.info(f"Distribution chart created with {len(plot_df)} categories")
     return f"Distribution chart created: {chart_url}"
 
@@ -277,7 +323,17 @@ def create_area_chart(x_column: str, y_column: str, title: str = "Area Chart") -
     ax.set_title(title, color=theme.text_color, fontsize=14)
     ax.grid(True, alpha=0.3)
 
-    chart_url = _save_chart()
+    data_source = get_data_source()
+    metadata = {
+        "chart_type": "area",
+        "x_column": x_column,
+        "y_column": y_column,
+        "title": title,
+        "row_count": len(df),
+    }
+    if data_source:
+        metadata["data_source"] = data_source
+    chart_url, _ = _save_chart(metadata)
     logger.info(f"Area chart created with {len(df)} points")
     return f"Area chart created: {chart_url}"
 

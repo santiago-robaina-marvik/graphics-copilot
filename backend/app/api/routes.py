@@ -1,16 +1,49 @@
+import json
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
 from langchain_core.messages import HumanMessage
 import re
 
-from app.models.schemas import ChatRequest, ChatResponse
+from app.models.schemas import (
+    ChatRequest,
+    ChatResponse,
+    RegenerateRequest,
+    RegenerateResponse,
+)
 from app.agent.graph import get_agent
-from app.agent.tools.dataframe import set_dataframe
+from app.agent.tools.dataframe import set_dataframe, set_data_source
+from app.services.sheets import fetch_public_sheet, SheetFetchError
+from app.agent.tools.plotting import (
+    create_bar_chart,
+    create_line_chart,
+    create_distribution_chart,
+    create_area_chart,
+)
 from app.agent.tools.themes import set_theme
+from app.config import get_settings
 from app.logging_config import get_logger
 
 logger = get_logger("app.api.routes")
 
 router = APIRouter()
+
+
+def _read_chart_metadata(chart_url: str) -> dict | None:
+    """Read metadata from JSON sidecar file for a chart."""
+    if not chart_url:
+        return None
+    try:
+        settings = get_settings()
+        # chart_url is like "/static/charts/chart_xxx.png"
+        filename = Path(chart_url).name.replace(".png", ".json")
+        json_path = Path(settings.charts_dir) / filename
+        if json_path.exists():
+            with open(json_path) as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return None
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -26,10 +59,36 @@ async def chat(request: ChatRequest):
     )
 
     try:
-        # Set the DataFrame if data is provided
-        if request.data:
+        # Fetch fresh data from Google Sheets if sheet source provided
+        if request.sheet_id:
+            try:
+                logger.info(f"Fetching fresh data from sheet: {request.sheet_id}")
+                fresh_data = fetch_public_sheet(
+                    request.sheet_id, request.sheet_gid or "0"
+                )
+                set_dataframe(fresh_data)
+                set_data_source(
+                    {
+                        "type": "google_sheets",
+                        "sheet_id": request.sheet_id,
+                        "sheet_gid": request.sheet_gid or "0",
+                    }
+                )
+                logger.info(f"Loaded {len(fresh_data)} rows from Google Sheet")
+            except SheetFetchError as e:
+                logger.warning(f"Sheet fetch failed, using cached data: {e}")
+                # Fall back to provided data if sheet fetch fails
+                if request.data:
+                    logger.info(
+                        f"Falling back to provided data: {len(request.data)} rows"
+                    )
+                    set_dataframe(request.data)
+                    set_data_source(None)  # Clear data source since using cached
+        elif request.data:
+            # No sheet source, use provided data
             logger.info(f"Data provided: {len(request.data)} rows")
             set_dataframe(request.data)
+            set_data_source(None)  # No sheet source
 
         # Set the chart theme
         theme_name = request.theme or "meli_dark"
@@ -88,8 +147,14 @@ async def chat(request: ChatRequest):
             logger.info(f"Chart generated: {chart_url}")
         logger.info("━━━ Request complete ━━━\n")
 
+        # Get chart metadata from sidecar file if a chart was generated
+        chart_metadata = _read_chart_metadata(chart_url)
+
         return ChatResponse(
-            response=response_text, chart_url=chart_url, session_id=request.session_id
+            response=response_text,
+            chart_url=chart_url,
+            chart_metadata=chart_metadata,
+            session_id=request.session_id,
         )
 
     except Exception as e:
@@ -130,3 +195,90 @@ async def get_history(session_id: str):
         return {"session_id": session_id, "history": history}
     except Exception:
         return {"session_id": session_id, "history": []}
+
+
+@router.post("/regenerate", response_model=RegenerateResponse)
+async def regenerate_chart(request: RegenerateRequest):
+    """Regenerate a chart with specified parameters, optionally fetching fresh data."""
+    # Fetch fresh data from Google Sheets if sheet source provided
+    if request.sheet_id:
+        try:
+            logger.info(f"Fetching fresh data from sheet: {request.sheet_id}")
+            fresh_data = fetch_public_sheet(request.sheet_id, request.sheet_gid or "0")
+            set_dataframe(fresh_data)
+            set_data_source(
+                {
+                    "type": "google_sheets",
+                    "sheet_id": request.sheet_id,
+                    "sheet_gid": request.sheet_gid or "0",
+                }
+            )
+            logger.info(f"Loaded {len(fresh_data)} rows from Google Sheet")
+        except SheetFetchError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    # Set theme
+    set_theme(request.theme or "meli_dark")
+
+    # Call appropriate chart function based on type
+    chart_functions = {
+        "bar": lambda: create_bar_chart.invoke(
+            {
+                "x_column": request.x_column,
+                "y_column": request.y_column,
+                "title": request.title or "Bar Chart",
+            }
+        ),
+        "line": lambda: create_line_chart.invoke(
+            {
+                "x_column": request.x_column,
+                "y_column": request.y_column,
+                "title": request.title or "Line Chart",
+            }
+        ),
+        "distribution": lambda: create_distribution_chart.invoke(
+            {
+                "labels_column": request.labels_column,
+                "values_column": request.values_column,
+                "title": request.title or "Distribution Chart",
+            }
+        ),
+        "area": lambda: create_area_chart.invoke(
+            {
+                "x_column": request.x_column,
+                "y_column": request.y_column,
+                "title": request.title or "Area Chart",
+            }
+        ),
+    }
+
+    if request.chart_type not in chart_functions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown chart type: {request.chart_type}. "
+            f"Valid types: {list(chart_functions.keys())}",
+        )
+
+    # Generate the chart
+    result = chart_functions[request.chart_type]()
+
+    # Check for errors
+    if "not found" in result.lower() or "no data" in result.lower():
+        raise HTTPException(status_code=400, detail=result)
+
+    # Extract chart URL from result string
+    match = re.search(r"/static/charts/[^\s\"']+\.png", result)
+    if not match:
+        raise HTTPException(status_code=500, detail="Failed to extract chart URL")
+
+    chart_url = match.group(0)
+
+    # Read metadata from JSON sidecar file
+    metadata = _read_chart_metadata(chart_url)
+    if not metadata:
+        raise HTTPException(status_code=500, detail="Failed to read chart metadata")
+
+    return RegenerateResponse(
+        chart_url=chart_url,
+        chart_metadata=metadata,
+    )

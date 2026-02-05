@@ -3,6 +3,8 @@
 from app.agent.tools.dataframe import (
     set_dataframe,
     get_dataframe,
+    set_data_source,
+    get_data_source,
     inspect_data,
     get_column_values,
     get_numeric_summary,
@@ -395,3 +397,25 @@ class TestResetData:
 
         reset_data.invoke({})
         assert len(get_dataframe()) == 5
+
+
+class TestDataSource:
+    """Tests for data source tracking."""
+
+    def test_set_and_get_data_source(self):
+        """Should store and retrieve data source metadata."""
+        source = {
+            "type": "google_sheets",
+            "sheet_id": "abc123",
+            "sheet_gid": "0",
+        }
+        set_data_source(source)
+        assert get_data_source() == source
+
+        # Cleanup
+        set_data_source(None)
+
+    def test_data_source_defaults_to_none(self):
+        """Should return None when no data source is set."""
+        set_data_source(None)
+        assert get_data_source() is None

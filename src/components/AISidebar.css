@@ -613,6 +613,17 @@
   color: white;
 }
 
+.gallery-btn.regenerate {
+  background: var(--accent-blue, #3483fa);
+  border-color: var(--accent-blue, #3483fa);
+  color: white;
+}
+
+.gallery-btn.regenerate:hover {
+  background: var(--accent-blue-hover, #2968c8);
+  border-color: var(--accent-blue-hover, #2968c8);
+}
+
 /* Backend chart images */
 .chart-image {
   width: 100%;

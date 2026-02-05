@@ -5,6 +5,8 @@ import {
   sendChatMessage,
   getChartImageUrl,
   checkHealth,
+  regenerateChart,
+  parseSheetUrl,
 } from "../api";
 
 describe("api service", () => {
@@ -141,6 +143,63 @@ describe("api service", () => {
 
       expect(body.data).toBe(null);
     });
+
+    it("should include sheet_id and sheet_gid when sheetSource provided", async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ response: "OK", session_id: "s1" }),
+      });
+
+      await sendChatMessage("hello", "session1", null, "meli_dark", {
+        sheet_id: "sheet123",
+        sheet_gid: "42",
+      });
+
+      const callBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(callBody.sheet_id).toBe("sheet123");
+      expect(callBody.sheet_gid).toBe("42");
+    });
+
+    it("should send null sheet info when no sheetSource", async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ response: "OK", session_id: "s1" }),
+      });
+
+      await sendChatMessage("hello", "session1", null, "meli_dark", null);
+
+      const callBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(callBody.sheet_id).toBeNull();
+      expect(callBody.sheet_gid).toBeNull();
+    });
+  });
+
+  describe("parseSheetUrl", () => {
+    it("should extract sheet_id from basic URL", () => {
+      const url =
+        "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit";
+      const result = parseSheetUrl(url);
+      expect(result.sheet_id).toBe(
+        "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+      );
+      expect(result.sheet_gid).toBe("0");
+    });
+
+    it("should extract gid from URL with tab", () => {
+      const url = "https://docs.google.com/spreadsheets/d/abc123/edit#gid=456";
+      const result = parseSheetUrl(url);
+      expect(result.sheet_id).toBe("abc123");
+      expect(result.sheet_gid).toBe("456");
+    });
+
+    it("should return null for non-Google-Sheets URL", () => {
+      expect(parseSheetUrl("https://example.com")).toBeNull();
+    });
+
+    it("should return null for empty/null URL", () => {
+      expect(parseSheetUrl("")).toBeNull();
+      expect(parseSheetUrl(null)).toBeNull();
+    });
   });
 
   describe("getChartImageUrl", () => {
@@ -201,6 +260,133 @@ describe("api service", () => {
       const result = await checkHealth();
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe("regenerateChart", () => {
+    it("should call /api/regenerate with correct parameters", async () => {
+      const mockResponse = {
+        chart_url: "/static/charts/chart_new.png",
+        chart_metadata: {
+          chart_type: "bar",
+          x_column: "category",
+          y_column: "value",
+        },
+      };
+
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse),
+      });
+
+      const metadata = {
+        chart_type: "bar",
+        x_column: "category",
+        y_column: "value",
+        title: "Test Chart",
+      };
+
+      const result = await regenerateChart(metadata, "meli_dark");
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/api/regenerate"),
+        expect.objectContaining({
+          method: "POST",
+          body: expect.stringContaining('"chart_type":"bar"'),
+        }),
+      );
+      expect(result).toEqual(mockResponse);
+    });
+
+    it("should throw error on failed response", async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ detail: "Column not found" }),
+      });
+
+      const metadata = { chart_type: "bar", x_column: "invalid" };
+
+      await expect(regenerateChart(metadata)).rejects.toThrow(
+        "Column not found",
+      );
+    });
+
+    it("should include all metadata fields in request", async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({ chart_url: "/test.png", chart_metadata: {} }),
+      });
+
+      const metadata = {
+        chart_type: "distribution",
+        labels_column: "category",
+        values_column: "sales",
+        title: "Sales Distribution",
+      };
+
+      await regenerateChart(metadata, "meli_light");
+
+      const callArgs = global.fetch.mock.calls[0];
+      const body = JSON.parse(callArgs[1].body);
+
+      expect(body.chart_type).toBe("distribution");
+      expect(body.labels_column).toBe("category");
+      expect(body.values_column).toBe("sales");
+      expect(body.title).toBe("Sales Distribution");
+      expect(body.theme).toBe("meli_light");
+    });
+
+    it("should include sheet_id and sheet_gid from data_source", async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            chart_url: "/static/charts/chart_new.png",
+            chart_metadata: { chart_type: "bar" },
+          }),
+      });
+
+      const metadata = {
+        chart_type: "bar",
+        x_column: "category",
+        y_column: "value",
+        data_source: {
+          type: "google_sheets",
+          sheet_id: "sheet123",
+          sheet_gid: "42",
+        },
+      };
+
+      await regenerateChart(metadata, "meli_dark");
+
+      const callBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(callBody.sheet_id).toBe("sheet123");
+      expect(callBody.sheet_gid).toBe("42");
+    });
+
+    it("should send null sheet_id when no data_source", async () => {
+      global.fetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            chart_url: "/static/charts/chart_new.png",
+            chart_metadata: { chart_type: "bar" },
+          }),
+      });
+
+      const metadata = {
+        chart_type: "bar",
+        x_column: "category",
+        y_column: "value",
+      };
+
+      await regenerateChart(metadata, "meli_dark");
+
+      const callBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(callBody.sheet_id).toBeNull();
+      expect(callBody.sheet_gid).toBeNull();
     });
   });
 });

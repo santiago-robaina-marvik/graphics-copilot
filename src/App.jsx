@@ -35,6 +35,11 @@ function App() {
     return localStorage.getItem("chartTheme") || "meli_dark";
   });
 
+  const [activeSheetSource, setActiveSheetSource] = useState(() => {
+    const saved = localStorage.getItem("activeSheetSource");
+    return saved ? JSON.parse(saved) : null;
+  });
+
   // Persist slidesUrl to localStorage
   useEffect(() => {
     localStorage.setItem("slidesUrl", slidesUrl);
@@ -63,6 +68,18 @@ function App() {
   useEffect(() => {
     localStorage.setItem("chartTheme", chartTheme);
   }, [chartTheme]);
+
+  // Persist activeSheetSource
+  useEffect(() => {
+    if (activeSheetSource) {
+      localStorage.setItem(
+        "activeSheetSource",
+        JSON.stringify(activeSheetSource),
+      );
+    } else {
+      localStorage.removeItem("activeSheetSource");
+    }
+  }, [activeSheetSource]);
 
   const handleChartGenerated = (chart) => {
     setGeneratedCharts((prev) => [...prev, chart]);
@@ -108,8 +125,9 @@ function App() {
     }
   };
 
-  const handleDataUpdate = (data) => {
+  const handleDataUpdate = (data, sheetSource = null) => {
     setUserData(data);
+    setActiveSheetSource(sheetSource);
     setCurrentView("main"); // Return to main view after selecting data
   };
 
@@ -140,6 +158,7 @@ function App() {
             userData={userData}
             chartTheme={chartTheme}
             onThemeChange={setChartTheme}
+            activeSheetSource={activeSheetSource}
           />
         </div>
       ) : (

@@ -8,6 +8,18 @@ logger = get_logger("app.agent.tools.dataframe")
 # Module-level storage for DataFrames
 _current_df: pd.DataFrame | None = None
 _original_df: pd.DataFrame | None = None  # Store original for reset
+_data_source: dict | None = None
+
+
+def set_data_source(source: dict | None) -> None:
+    """Set the current data source metadata."""
+    global _data_source
+    _data_source = source
+
+
+def get_data_source() -> dict | None:
+    """Get the current data source metadata."""
+    return _data_source
 
 
 def set_dataframe(data: list[dict] | None):

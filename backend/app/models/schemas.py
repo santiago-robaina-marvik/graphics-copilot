@@ -7,9 +7,31 @@ class ChatRequest(BaseModel):
     session_id: str
     data: Optional[list[dict[str, Any]]] = None  # DataFrame as list of dicts
     theme: Optional[Literal["meli_dark", "meli_light", "meli_yellow"]] = "meli_dark"
+    # Google Sheets source for fresh data fetching
+    sheet_id: Optional[str] = None
+    sheet_gid: Optional[str] = "0"
 
 
 class ChatResponse(BaseModel):
     response: str
     chart_url: Optional[str] = None
+    chart_metadata: Optional[dict[str, Any]] = None
     session_id: str
+
+
+class RegenerateRequest(BaseModel):
+    chart_type: str
+    x_column: Optional[str] = None
+    y_column: Optional[str] = None
+    labels_column: Optional[str] = None
+    values_column: Optional[str] = None
+    title: Optional[str] = None
+    theme: Optional[Literal["meli_dark", "meli_light", "meli_yellow"]] = "meli_dark"
+    # Google Sheets source for fresh data fetching
+    sheet_id: Optional[str] = None
+    sheet_gid: Optional[str] = "0"
+
+
+class RegenerateResponse(BaseModel):
+    chart_url: str
+    chart_metadata: dict[str, Any]

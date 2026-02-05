@@ -11,12 +11,14 @@ import {
   Copy,
   Check,
   Trash2,
+  RefreshCw,
 } from "lucide-react";
 import {
   sendChatMessage,
   getChartImageUrl,
   getOrCreateSessionId,
   resetSession,
+  regenerateChart,
 } from "../services/api";
 import ThemeSelector from "./ThemeSelector";
 import "./AISidebar.css";
@@ -35,6 +37,7 @@ function AISidebar({
   userData: externalUserData,
   chartTheme,
   onThemeChange,
+  activeSheetSource,
 }) {
   // Load persisted chat messages
   const [messages, setMessages] = useState(() => {
@@ -92,12 +95,13 @@ function AISidebar({
       // Prepare data for API
       const dataToSend = userData?.data || null;
 
-      // Call backend API with theme
+      // Call backend API with theme and sheet source
       const result = await sendChatMessage(
         prompt,
         sessionId,
         dataToSend,
         chartTheme,
+        activeSheetSource,
       );
 
       const chartId = Date.now();
@@ -118,8 +122,9 @@ function AISidebar({
       if (chartUrl) {
         onChartGenerated({
           id: chartId,
-          type: "image",
+          type: result.chart_metadata?.chart_type || "image",
           imageUrl: chartUrl,
+          metadata: result.chart_metadata || null,
         });
       }
     } catch (err) {
@@ -189,6 +194,38 @@ function AISidebar({
       console.error("Failed to download:", err);
       // Fallback: open in new tab
       window.open(imageUrl, "_blank");
+    }
+  };
+
+  const handleRegenerateChart = async (chart) => {
+    if (!chart.metadata) {
+      alert("Cannot regenerate: chart metadata not available");
+      return;
+    }
+
+    try {
+      const result = await regenerateChart(chart.metadata, chartTheme);
+      const newChartUrl = getChartImageUrl(result.chart_url);
+
+      onChartGenerated({
+        id: Date.now(),
+        type: result.chart_metadata.chart_type,
+        imageUrl: newChartUrl,
+        metadata: result.chart_metadata,
+      });
+
+      // Add message to chat
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "assistant",
+          content: `Regenerated ${result.chart_metadata.chart_type} chart with current data.`,
+          chartImage: newChartUrl,
+          chartId: Date.now(),
+        },
+      ]);
+    } catch (error) {
+      alert(`Failed to regenerate chart: ${error.message}`);
     }
   };
 
@@ -401,6 +438,15 @@ function AISidebar({
                       >
                         <Download size={12} />
                       </button>
+                      {chart.metadata && (
+                        <button
+                          className="gallery-btn regenerate"
+                          onClick={() => handleRegenerateChart(chart)}
+                          title="Regenerate with current data"
+                        >
+                          <RefreshCw size={12} />
+                        </button>
+                      )}
                       <button
                         className="gallery-btn delete"
                         onClick={() => onChartDeleted(chart.id)}

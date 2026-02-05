@@ -56,18 +56,24 @@ class TestSaveChart:
     @patch("app.agent.tools.plotting.get_settings")
     @patch("matplotlib.pyplot.savefig")
     @patch("matplotlib.pyplot.close")
-    def test_save_chart_returns_url(self, mock_close, mock_savefig, mock_settings):
-        """_save_chart should return URL path."""
-        mock_settings.return_value.charts_dir = "/tmp/charts"
+    def test_save_chart_returns_url_and_metadata(
+        self, mock_close, mock_savefig, mock_settings, tmp_path
+    ):
+        """_save_chart should return URL path and metadata."""
+        mock_settings.return_value.charts_dir = str(tmp_path)
         set_theme("meli_dark")
 
         # Create a figure to save
         plt.figure()
 
-        result = _save_chart()
+        metadata = {"chart_type": "bar", "x_column": "category", "y_column": "value"}
+        chart_url, full_metadata = _save_chart(metadata)
 
-        assert result.startswith("/static/charts/")
-        assert result.endswith(".png")
+        assert chart_url.startswith("/static/charts/")
+        assert chart_url.endswith(".png")
+        assert full_metadata["chart_type"] == "bar"
+        assert "theme" in full_metadata
+        assert "created_at" in full_metadata
         mock_savefig.assert_called_once()
         mock_close.assert_called_once()
 
@@ -75,14 +81,15 @@ class TestSaveChart:
     @patch("matplotlib.pyplot.savefig")
     @patch("matplotlib.pyplot.close")
     def test_save_chart_uses_theme_facecolor(
-        self, mock_close, mock_savefig, mock_settings
+        self, mock_close, mock_savefig, mock_settings, tmp_path
     ):
         """_save_chart should use theme facecolor."""
-        mock_settings.return_value.charts_dir = "/tmp/charts"
+        mock_settings.return_value.charts_dir = str(tmp_path)
         set_theme("meli_light")
         plt.figure()
 
-        _save_chart()
+        metadata = {"chart_type": "bar"}
+        _save_chart(metadata)
 
         # Check savefig was called with light theme facecolor
         call_kwargs = mock_savefig.call_args[1]
@@ -95,7 +102,7 @@ class TestCreateBarChart:
     @patch("app.agent.tools.plotting._save_chart")
     def test_create_bar_chart_success(self, mock_save, sample_dataframe):
         """create_bar_chart should generate chart successfully."""
-        mock_save.return_value = "/static/charts/test.png"
+        mock_save.return_value = ("/static/charts/test.png", {"chart_type": "bar"})
         set_dataframe(sample_dataframe.to_dict(orient="records"))
 
         result = create_bar_chart.invoke(
@@ -125,7 +132,7 @@ class TestCreateLineChart:
     @patch("app.agent.tools.plotting._save_chart")
     def test_create_line_chart_success(self, mock_save, sample_dataframe):
         """create_line_chart should generate chart successfully."""
-        mock_save.return_value = "/static/charts/test.png"
+        mock_save.return_value = ("/static/charts/test.png", {"chart_type": "line"})
         set_dataframe(sample_dataframe.to_dict(orient="records"))
 
         result = create_line_chart.invoke({"x_column": "Date", "y_column": "Revenue"})
@@ -139,7 +146,10 @@ class TestCreateDistributionChart:
     @patch("app.agent.tools.plotting._save_chart")
     def test_create_distribution_chart_success(self, mock_save, sample_dataframe):
         """create_distribution_chart should generate chart successfully."""
-        mock_save.return_value = "/static/charts/test.png"
+        mock_save.return_value = (
+            "/static/charts/test.png",
+            {"chart_type": "distribution"},
+        )
         set_dataframe(sample_dataframe.to_dict(orient="records"))
 
         result = create_distribution_chart.invoke(
@@ -151,7 +161,10 @@ class TestCreateDistributionChart:
     @patch("app.agent.tools.plotting._save_chart")
     def test_create_distribution_chart_limits_to_10(self, mock_save, large_dataframe):
         """create_distribution_chart should limit to top 10 values."""
-        mock_save.return_value = "/static/charts/test.png"
+        mock_save.return_value = (
+            "/static/charts/test.png",
+            {"chart_type": "distribution"},
+        )
         set_dataframe(large_dataframe.to_dict(orient="records"))
 
         result = create_distribution_chart.invoke(
@@ -167,7 +180,7 @@ class TestCreateAreaChart:
     @patch("app.agent.tools.plotting._save_chart")
     def test_create_area_chart_success(self, mock_save, sample_dataframe):
         """create_area_chart should generate chart successfully."""
-        mock_save.return_value = "/static/charts/test.png"
+        mock_save.return_value = ("/static/charts/test.png", {"chart_type": "area"})
         set_dataframe(sample_dataframe.to_dict(orient="records"))
 
         result = create_area_chart.invoke({"x_column": "Date", "y_column": "Revenue"})

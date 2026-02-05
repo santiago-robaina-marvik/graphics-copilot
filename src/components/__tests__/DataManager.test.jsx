@@ -227,7 +227,7 @@ describe("DataManager", () => {
     const useButton = screen.getByTitle("Use this dataset");
     await user.click(useButton);
 
-    expect(onDataUpdate).toHaveBeenCalledWith(mockDatasets[0].data);
+    expect(onDataUpdate).toHaveBeenCalledWith(mockDatasets[0].data, null);
     expect(global.alert).toHaveBeenCalledWith(
       expect.stringContaining("Test Dataset"),
     );
