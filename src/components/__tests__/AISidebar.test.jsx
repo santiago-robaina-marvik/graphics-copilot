@@ -286,4 +286,51 @@ describe("AISidebar", () => {
 
     expect(sendChatMessage).not.toHaveBeenCalled();
   });
+
+  it("shows 'Chart deleted' placeholder for deleted charts in chat", () => {
+    const deletedChartUrl =
+      "http://localhost:8000/static/charts/deleted_chart.png";
+    const mockMessages = [
+      {
+        type: "assistant",
+        content: "Here is your chart",
+        chartImage: deletedChartUrl,
+        chartId: 123,
+      },
+    ];
+    localStorage.setItem("chatMessages", JSON.stringify(mockMessages));
+
+    // generatedCharts is empty, so the chart URL won't be found
+    render(<AISidebar {...defaultProps} generatedCharts={[]} />);
+
+    expect(screen.getByText("Chart deleted")).toBeInTheDocument();
+    // Should NOT show the copy/download buttons
+    expect(screen.queryByText("Copy")).not.toBeInTheDocument();
+    expect(screen.queryByText("Download")).not.toBeInTheDocument();
+  });
+
+  it("shows chart image when chart exists in generatedCharts", () => {
+    const chartUrl = "http://localhost:8000/static/charts/existing_chart.png";
+    const mockMessages = [
+      {
+        type: "assistant",
+        content: "Here is your chart",
+        chartImage: chartUrl,
+        chartId: 123,
+      },
+    ];
+    localStorage.setItem("chatMessages", JSON.stringify(mockMessages));
+
+    const mockCharts = [{ id: 123, type: "bar", imageUrl: chartUrl }];
+    render(<AISidebar {...defaultProps} generatedCharts={mockCharts} />);
+
+    // Should show the chart image
+    const images = screen.getAllByRole("img");
+    expect(images.some((img) => img.src === chartUrl)).toBe(true);
+    // Should show copy/download buttons
+    expect(screen.getByText("Copy")).toBeInTheDocument();
+    expect(screen.getByText("Download")).toBeInTheDocument();
+    // Should NOT show deleted placeholder
+    expect(screen.queryByText("Chart deleted")).not.toBeInTheDocument();
+  });
 });

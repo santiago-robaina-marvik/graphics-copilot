@@ -35,3 +35,28 @@ class RegenerateRequest(BaseModel):
 class RegenerateResponse(BaseModel):
     chart_url: str
     chart_metadata: dict[str, Any]
+
+
+class TrashItem(BaseModel):
+    filename: str
+    deleted_at: str
+    expires_at: str
+    metadata: Optional[dict[str, Any]] = None
+
+
+class TrashListResponse(BaseModel):
+    items: list[TrashItem]
+    purged_count: int
+
+
+class DeleteChartResponse(BaseModel):
+    success: bool
+    message: str
+    filename: str
+
+
+class RestoreChartResponse(BaseModel):
+    success: bool
+    message: str
+    chart_url: str
+    chart_metadata: Optional[dict[str, Any]] = None

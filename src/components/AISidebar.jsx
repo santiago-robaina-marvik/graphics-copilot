@@ -12,6 +12,7 @@ import {
   Check,
   Trash2,
   RefreshCw,
+  RotateCcw,
 } from "lucide-react";
 import {
   sendChatMessage,
@@ -38,6 +39,9 @@ function AISidebar({
   chartTheme,
   onThemeChange,
   activeSheetSource,
+  trashedCharts = [],
+  onTrashLoad,
+  onChartRestored,
 }) {
   // Load persisted chat messages
   const [messages, setMessages] = useState(() => {
@@ -248,6 +252,16 @@ function AISidebar({
           <Image size={16} />
           Charts ({generatedCharts.length})
         </button>
+        <button
+          className={`tab tab-icon-only ${activeTab === "trash" ? "active" : ""}`}
+          onClick={() => {
+            setActiveTab("trash");
+            onTrashLoad?.();
+          }}
+          title="Trash"
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
 
       {activeTab === "chat" ? (
@@ -270,60 +284,76 @@ function AISidebar({
                 )}
                 <div className="message-content">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  {msg.chartImage && (
-                    <div className="message-chart">
-                      <div className="chart-preview">
-                        <img
-                          src={msg.chartImage}
-                          alt="Generated chart"
-                          className="chart-image"
-                          crossOrigin="anonymous"
-                        />
-                      </div>
-                      <div className="chart-actions">
-                        <button
-                          className={`action-btn copy ${copiedCharts[msg.chartId] ? "success" : ""}`}
-                          onClick={() =>
-                            handleCopyImageChart(msg.chartImage, msg.chartId)
-                          }
-                          title="Copy to clipboard, then paste in Google Slides"
-                        >
-                          {copiedCharts[msg.chartId] ? (
-                            <>
-                              <Check size={14} />
-                              Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Copy size={14} />
-                              Copy
-                            </>
-                          )}
-                        </button>
+                  {msg.chartImage &&
+                    (() => {
+                      const isChartDeleted = !generatedCharts.some(
+                        (chart) => chart.imageUrl === msg.chartImage,
+                      );
+                      return isChartDeleted ? (
+                        <div className="message-chart">
+                          <div className="chart-preview chart-deleted-placeholder">
+                            <Trash2 size={24} />
+                            <span>Chart deleted</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="message-chart">
+                          <div className="chart-preview">
+                            <img
+                              src={msg.chartImage}
+                              alt="Generated chart"
+                              className="chart-image"
+                              crossOrigin="anonymous"
+                            />
+                          </div>
+                          <div className="chart-actions">
+                            <button
+                              className={`action-btn copy ${copiedCharts[msg.chartId] ? "success" : ""}`}
+                              onClick={() =>
+                                handleCopyImageChart(
+                                  msg.chartImage,
+                                  msg.chartId,
+                                )
+                              }
+                              title="Copy to clipboard, then paste in Google Slides"
+                            >
+                              {copiedCharts[msg.chartId] ? (
+                                <>
+                                  <Check size={14} />
+                                  Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={14} />
+                                  Copy
+                                </>
+                              )}
+                            </button>
 
-                        <button
-                          className="action-btn download"
-                          onClick={() =>
-                            handleDownloadImageChart(
-                              msg.chartImage,
-                              msg.chartId,
-                            )
-                          }
-                          title="Download as PNG"
-                        >
-                          <Download size={14} />
-                          Download
-                        </button>
-                      </div>
+                            <button
+                              className="action-btn download"
+                              onClick={() =>
+                                handleDownloadImageChart(
+                                  msg.chartImage,
+                                  msg.chartId,
+                                )
+                              }
+                              title="Download as PNG"
+                            >
+                              <Download size={14} />
+                              Download
+                            </button>
+                          </div>
 
-                      <div className="copy-hint">
-                        <span>
-                          After copying, paste directly into Google Slides
-                          (Ctrl+V / Cmd+V)
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                          <div className="copy-hint">
+                            <span>
+                              After copying, paste directly into Google Slides
+                              (Ctrl+V / Cmd+V)
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
                 </div>
               </div>
             ))}
@@ -385,7 +415,7 @@ function AISidebar({
             </div>
           </div>
         </>
-      ) : (
+      ) : activeTab === "gallery" ? (
         <div className="gallery-container">
           {generatedCharts.length === 0 ? (
             <div className="gallery-empty">
@@ -461,7 +491,59 @@ function AISidebar({
             </div>
           )}
         </div>
-      )}
+      ) : activeTab === "trash" ? (
+        <div className="trash-container">
+          {trashedCharts.length === 0 ? (
+            <div className="gallery-empty">
+              <Trash2 size={32} />
+              <p>Trash is empty</p>
+              <span>Deleted charts will appear here for 7 days</span>
+            </div>
+          ) : (
+            <div className="gallery-grid">
+              {trashedCharts.map((item) => {
+                const expiresAt = new Date(item.expires_at);
+                const now = new Date();
+                const daysLeft = Math.max(
+                  0,
+                  Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)),
+                );
+                // Build trash image URL
+                const trashImageUrl = `${
+                  import.meta.env.VITE_API_URL || "http://localhost:8000"
+                }/static/charts/trash/${item.filename}`;
+
+                return (
+                  <div key={item.filename} className="gallery-item">
+                    <div className="gallery-chart">
+                      <img
+                        src={trashImageUrl}
+                        alt="Deleted chart"
+                        className="chart-image"
+                        crossOrigin="anonymous"
+                      />
+                    </div>
+                    <div className="gallery-actions">
+                      <span className="trash-expires">
+                        Expires in {daysLeft} day{daysLeft !== 1 ? "s" : ""}
+                      </span>
+                      <div className="gallery-buttons">
+                        <button
+                          className="gallery-btn restore"
+                          onClick={() => onChartRestored?.(item.filename)}
+                          title="Restore chart"
+                        >
+                          <RotateCcw size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : null}
     </aside>
   );
 }

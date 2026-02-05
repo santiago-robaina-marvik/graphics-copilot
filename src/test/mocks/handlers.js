@@ -35,4 +35,52 @@ export const handlers = [
       { role: "ai", content: "Hi there! How can I help?" },
     ]);
   }),
+
+  // Delete chart (move to trash)
+  http.delete(`${API_URL}/api/charts/:filename`, ({ params }) => {
+    const filename = params.filename.replace(".png", "");
+    if (filename === "chart_nonexistent") {
+      return HttpResponse.json(
+        { detail: "Chart not found: chart_nonexistent" },
+        { status: 404 },
+      );
+    }
+    return HttpResponse.json({
+      success: true,
+      message: "Chart moved to trash",
+      filename: `${filename}.png`,
+    });
+  }),
+
+  // List trash
+  http.get(`${API_URL}/api/charts/trash`, () => {
+    return HttpResponse.json({
+      items: [
+        {
+          filename: "chart_deleted1.png",
+          deleted_at: "2026-01-01T12:00:00",
+          expires_at: "2026-01-08T12:00:00",
+          metadata: { title: "Deleted Chart 1" },
+        },
+      ],
+      purged_count: 0,
+    });
+  }),
+
+  // Restore chart from trash
+  http.post(`${API_URL}/api/charts/trash/:filename/restore`, ({ params }) => {
+    const filename = params.filename.replace(".png", "");
+    if (filename === "chart_nonexistent") {
+      return HttpResponse.json(
+        { detail: "Chart not found in trash: chart_nonexistent" },
+        { status: 404 },
+      );
+    }
+    return HttpResponse.json({
+      success: true,
+      message: "Chart restored successfully",
+      chart_url: `/static/charts/${filename}.png`,
+      chart_metadata: { title: "Restored Chart" },
+    });
+  }),
 ];

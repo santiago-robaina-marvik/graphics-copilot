@@ -5,6 +5,13 @@ import SlidesViewer from "./components/SlidesViewer";
 import AISidebar from "./components/AISidebar";
 import DataManager from "./components/DataManager";
 import TemplateSelector from "./components/TemplateSelector";
+import {
+  extractChartFilename,
+  deleteChart,
+  listTrash,
+  restoreChart,
+  getChartImageUrl,
+} from "./services/api";
 import "./App.css";
 
 function App() {
@@ -39,6 +46,8 @@ function App() {
     const saved = localStorage.getItem("activeSheetSource");
     return saved ? JSON.parse(saved) : null;
   });
+
+  const [trashedCharts, setTrashedCharts] = useState([]);
 
   // Persist slidesUrl to localStorage
   useEffect(() => {
@@ -85,8 +94,58 @@ function App() {
     setGeneratedCharts((prev) => [...prev, chart]);
   };
 
-  const handleChartDeleted = (chartId) => {
-    setGeneratedCharts((prev) => prev.filter((chart) => chart.id !== chartId));
+  const handleChartDeleted = async (chartId) => {
+    const chart = generatedCharts.find((c) => c.id === chartId);
+    if (!chart) return;
+
+    const filename = extractChartFilename(chart.imageUrl);
+    if (!filename) {
+      // For template-generated charts (data URLs), just remove locally
+      setGeneratedCharts((prev) => prev.filter((c) => c.id !== chartId));
+      return;
+    }
+
+    try {
+      await deleteChart(filename);
+      setGeneratedCharts((prev) => prev.filter((c) => c.id !== chartId));
+    } catch (error) {
+      console.error("Failed to delete chart:", error);
+      // If chart not found on backend (already deleted), still remove from UI
+      if (error.message.includes("not found")) {
+        setGeneratedCharts((prev) => prev.filter((c) => c.id !== chartId));
+      } else {
+        alert(`Failed to delete chart: ${error.message}`);
+      }
+    }
+  };
+
+  const handleLoadTrash = async () => {
+    try {
+      const result = await listTrash();
+      setTrashedCharts(result.items);
+    } catch (error) {
+      console.error("Failed to load trash:", error);
+    }
+  };
+
+  const handleChartRestored = async (filename) => {
+    try {
+      const result = await restoreChart(filename);
+      // Add restored chart to generatedCharts
+      const newChart = {
+        id: Date.now(),
+        imageUrl: getChartImageUrl(result.chart_url),
+        metadata: result.chart_metadata,
+      };
+      setGeneratedCharts((prev) => [...prev, newChart]);
+      // Remove from trashedCharts
+      setTrashedCharts((prev) =>
+        prev.filter((item) => item.filename !== filename),
+      );
+    } catch (error) {
+      console.error("Failed to restore chart:", error);
+      alert(`Failed to restore chart: ${error.message}`);
+    }
   };
 
   const handleSaveTemplate = async (templateElement, templateType) => {
@@ -159,6 +218,9 @@ function App() {
             chartTheme={chartTheme}
             onThemeChange={setChartTheme}
             activeSheetSource={activeSheetSource}
+            trashedCharts={trashedCharts}
+            onTrashLoad={handleLoadTrash}
+            onChartRestored={handleChartRestored}
           />
         </div>
       ) : (

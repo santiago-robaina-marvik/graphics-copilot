@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -10,6 +11,10 @@ from app.models.schemas import (
     ChatResponse,
     RegenerateRequest,
     RegenerateResponse,
+    DeleteChartResponse,
+    TrashItem,
+    TrashListResponse,
+    RestoreChartResponse,
 )
 from app.agent.graph import get_agent
 from app.agent.tools.dataframe import set_dataframe, set_data_source
@@ -281,4 +286,206 @@ async def regenerate_chart(request: RegenerateRequest):
     return RegenerateResponse(
         chart_url=chart_url,
         chart_metadata=metadata,
+    )
+
+
+def _get_trash_dir() -> Path:
+    """Ensure trash directory exists and return its path."""
+    settings = get_settings()
+    trash_path = Path(settings.trash_dir)
+    trash_path.mkdir(parents=True, exist_ok=True)
+    return trash_path
+
+
+def _purge_expired_trash() -> int:
+    """Delete items older than retention period, return count of purged items."""
+    settings = get_settings()
+    trash_path = _get_trash_dir()
+    retention_days = settings.trash_retention_days
+    cutoff = datetime.now() - timedelta(days=retention_days)
+    purged_count = 0
+
+    for json_file in trash_path.glob("*.json"):
+        try:
+            with open(json_file) as f:
+                metadata = json.load(f)
+            deleted_at_str = metadata.get("deleted_at")
+            if deleted_at_str:
+                deleted_at = datetime.fromisoformat(deleted_at_str)
+                if deleted_at < cutoff:
+                    # Delete both JSON and PNG
+                    png_file = json_file.with_suffix(".png")
+                    json_file.unlink(missing_ok=True)
+                    if png_file.exists():
+                        png_file.unlink()
+                    purged_count += 1
+        except (json.JSONDecodeError, ValueError, OSError):
+            # Skip malformed files
+            continue
+
+    return purged_count
+
+
+def _validate_chart_filename(filename: str) -> None:
+    """Validate chart filename for security."""
+    if not filename.startswith("chart_"):
+        raise HTTPException(status_code=400, detail="Invalid chart filename")
+    if "/" in filename or "\\" in filename or ".." in filename:
+        raise HTTPException(
+            status_code=400, detail="Invalid filename: path traversal not allowed"
+        )
+
+
+@router.delete("/charts/{filename}", response_model=DeleteChartResponse)
+async def delete_chart(filename: str):
+    """Move a chart to trash (soft delete)."""
+    _validate_chart_filename(filename)
+
+    settings = get_settings()
+    charts_path = Path(settings.charts_dir)
+    trash_path = _get_trash_dir()
+
+    # Handle filename with or without extension
+    base_filename = filename.replace(".png", "").replace(".json", "")
+    png_file = charts_path / f"{base_filename}.png"
+    json_file = charts_path / f"{base_filename}.json"
+
+    if not png_file.exists():
+        raise HTTPException(status_code=404, detail=f"Chart not found: {filename}")
+
+    # Read existing metadata
+    metadata = {}
+    if json_file.exists():
+        try:
+            with open(json_file) as f:
+                metadata = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # Add deletion timestamp
+    deleted_at = datetime.now()
+    metadata["deleted_at"] = deleted_at.isoformat()
+
+    # Move files to trash
+    trash_png = trash_path / f"{base_filename}.png"
+    trash_json = trash_path / f"{base_filename}.json"
+
+    try:
+        png_file.rename(trash_png)
+        with open(trash_json, "w") as f:
+            json.dump(metadata, f, indent=2)
+        if json_file.exists():
+            json_file.unlink()
+    except OSError as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to move chart to trash: {e}"
+        )
+
+    logger.info(f"Chart moved to trash: {base_filename}")
+
+    return DeleteChartResponse(
+        success=True,
+        message="Chart moved to trash",
+        filename=f"{base_filename}.png",
+    )
+
+
+@router.get("/charts/trash", response_model=TrashListResponse)
+async def list_trash():
+    """List charts in trash, purging expired items first."""
+    settings = get_settings()
+    trash_path = _get_trash_dir()
+
+    # Purge expired items first
+    purged_count = _purge_expired_trash()
+
+    # List remaining items
+    items = []
+    retention_days = settings.trash_retention_days
+
+    for json_file in trash_path.glob("*.json"):
+        try:
+            with open(json_file) as f:
+                metadata = json.load(f)
+
+            deleted_at_str = metadata.get("deleted_at")
+            if not deleted_at_str:
+                continue
+
+            deleted_at = datetime.fromisoformat(deleted_at_str)
+            expires_at = deleted_at + timedelta(days=retention_days)
+
+            # Remove deleted_at from metadata shown to user
+            user_metadata = {k: v for k, v in metadata.items() if k != "deleted_at"}
+
+            items.append(
+                TrashItem(
+                    filename=json_file.stem + ".png",
+                    deleted_at=deleted_at_str,
+                    expires_at=expires_at.isoformat(),
+                    metadata=user_metadata if user_metadata else None,
+                )
+            )
+        except (json.JSONDecodeError, ValueError, OSError):
+            continue
+
+    # Sort by deletion date (newest first)
+    items.sort(key=lambda x: x.deleted_at, reverse=True)
+
+    return TrashListResponse(items=items, purged_count=purged_count)
+
+
+@router.post("/charts/trash/{filename}/restore", response_model=RestoreChartResponse)
+async def restore_chart(filename: str):
+    """Restore a chart from trash."""
+    _validate_chart_filename(filename)
+
+    settings = get_settings()
+    charts_path = Path(settings.charts_dir)
+    trash_path = _get_trash_dir()
+
+    # Handle filename with or without extension
+    base_filename = filename.replace(".png", "").replace(".json", "")
+    trash_png = trash_path / f"{base_filename}.png"
+    trash_json = trash_path / f"{base_filename}.json"
+
+    if not trash_png.exists():
+        raise HTTPException(
+            status_code=404, detail=f"Chart not found in trash: {filename}"
+        )
+
+    # Read metadata
+    metadata = {}
+    if trash_json.exists():
+        try:
+            with open(trash_json) as f:
+                metadata = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # Remove deleted_at from metadata
+    metadata.pop("deleted_at", None)
+
+    # Move files back to charts directory
+    restored_png = charts_path / f"{base_filename}.png"
+    restored_json = charts_path / f"{base_filename}.json"
+
+    try:
+        trash_png.rename(restored_png)
+        if metadata:
+            with open(restored_json, "w") as f:
+                json.dump(metadata, f, indent=2)
+        trash_json.unlink(missing_ok=True)
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to restore chart: {e}")
+
+    logger.info(f"Chart restored from trash: {base_filename}")
+
+    chart_url = f"/static/charts/{base_filename}.png"
+
+    return RestoreChartResponse(
+        success=True,
+        message="Chart restored successfully",
+        chart_url=chart_url,
+        chart_metadata=metadata if metadata else None,
     )

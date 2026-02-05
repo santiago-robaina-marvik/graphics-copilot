@@ -113,3 +113,74 @@ export async function regenerateChart(metadata, theme = "meli_dark") {
 
   return response.json();
 }
+
+/**
+ * Extract the chart filename from an image URL.
+ * @param {string} imageUrl - Full chart URL (e.g., "http://localhost:8000/static/charts/chart_123.png")
+ * @returns {string|null} - Filename without extension (e.g., "chart_123") or null if invalid
+ */
+export function extractChartFilename(imageUrl) {
+  if (!imageUrl) return null;
+  const match = imageUrl.match(/chart_[^/]+(?=\.png)/);
+  return match ? match[0] : null;
+}
+
+/**
+ * Delete a chart (move to trash).
+ * @param {string} filename - Chart filename (with or without .png extension)
+ * @returns {Promise<{success: boolean, message: string, filename: string}>}
+ */
+export async function deleteChart(filename) {
+  const response = await fetch(`${API_URL}/api/charts/${filename}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Unknown error" }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * List charts in trash.
+ * @returns {Promise<{items: Array<{filename: string, deleted_at: string, expires_at: string, metadata: object}>, purged_count: number}>}
+ */
+export async function listTrash() {
+  const response = await fetch(`${API_URL}/api/charts/trash`);
+
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Unknown error" }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Restore a chart from trash.
+ * @param {string} filename - Chart filename (with or without .png extension)
+ * @returns {Promise<{success: boolean, message: string, chart_url: string, chart_metadata: object}>}
+ */
+export async function restoreChart(filename) {
+  const response = await fetch(
+    `${API_URL}/api/charts/trash/${filename}/restore`,
+    {
+      method: "POST",
+    },
+  );
+
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Unknown error" }));
+    throw new Error(error.detail || `HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
