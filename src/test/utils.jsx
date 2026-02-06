@@ -125,12 +125,3 @@ export function mockGoogleAPI() {
 export function cleanupGoogleAPI() {
   delete window.google;
 }
-
-/**
- * Helper to mock html-to-image toPng function
- */
-export function mockHtmlToImage() {
-  return {
-    toPng: vi.fn(() => Promise.resolve("data:image/png;base64,mockImageData")),
-  };
-}

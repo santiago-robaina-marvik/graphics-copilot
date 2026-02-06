@@ -263,6 +263,57 @@ describe("api service", () => {
     });
   });
 
+  describe("composeLayout", () => {
+    it("sends compose-layout request to backend", async () => {
+      const { composeLayout } = await import("../api");
+
+      global.fetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          chart_url: "/static/charts/chart_layout_123.png",
+          chart_metadata: {
+            chart_type: "layout",
+            layout_type: "split-horizontal",
+            source: "template_editor",
+            composed_from: ["chart_test_001", "chart_test_002"],
+          },
+        }),
+      });
+
+      const result = await composeLayout(
+        ["chart_test_001", "chart_test_002"],
+        "split-horizontal",
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.chart_url).toContain("chart_layout_");
+      expect(result.chart_metadata.layout_type).toBe("split-horizontal");
+
+      const callArgs = global.fetch.mock.calls[0];
+      const body = JSON.parse(callArgs[1].body);
+      expect(body.chart_filenames).toEqual([
+        "chart_test_001",
+        "chart_test_002",
+      ]);
+      expect(body.layout_type).toBe("split-horizontal");
+    });
+
+    it("throws error on failed response", async () => {
+      const { composeLayout } = await import("../api");
+
+      global.fetch.mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: async () => ({ detail: "Invalid layout type" }),
+      });
+
+      await expect(composeLayout(["chart_test"], "invalid")).rejects.toThrow(
+        "Invalid layout type",
+      );
+    });
+  });
+
   describe("regenerateChart", () => {
     it("should call /api/regenerate with correct parameters", async () => {
       const mockResponse = {

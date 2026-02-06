@@ -67,6 +67,21 @@ export const handlers = [
     });
   }),
 
+  // Compose layout
+  http.post(`${API_URL}/api/charts/compose-layout`, async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json({
+      success: true,
+      chart_url: `/static/charts/chart_layout_${Date.now()}.png`,
+      chart_metadata: {
+        chart_type: "layout",
+        layout_type: body.layout_type,
+        source: "template_editor",
+        composed_from: body.chart_filenames,
+      },
+    });
+  }),
+
   // Restore chart from trash
   http.post(`${API_URL}/api/charts/trash/:filename/restore`, ({ params }) => {
     const filename = params.filename.replace(".png", "");

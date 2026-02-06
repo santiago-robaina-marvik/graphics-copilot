@@ -186,19 +186,19 @@ export async function restoreChart(filename) {
 }
 
 /**
- * Upload a template layout image as a chart.
- * @param {string} imageData - Base64 encoded PNG (data URL from html-to-image)
- * @param {string} layoutType - Layout type (e.g., "grid", "half-left")
+ * Compose a layout image from multiple charts on the backend.
+ * @param {string[]} chartFilenames - Ordered chart filenames (without .png extension)
+ * @param {string} layoutType - Layout type (e.g., "grid", "split-horizontal")
  * @returns {Promise<{success: boolean, chart_url: string, chart_metadata: object}>}
  */
-export async function uploadChart(imageData, layoutType) {
-  const response = await fetch(`${API_URL}/api/charts/upload`, {
+export async function composeLayout(chartFilenames, layoutType) {
+  const response = await fetch(`${API_URL}/api/charts/compose-layout`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      image_data: imageData,
+      chart_filenames: chartFilenames,
       layout_type: layoutType,
     }),
   });

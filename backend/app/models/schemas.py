@@ -62,9 +62,9 @@ class RestoreChartResponse(BaseModel):
     chart_metadata: Optional[dict[str, Any]] = None
 
 
-class UploadChartRequest(BaseModel):
-    image_data: str  # Base64 encoded PNG (with or without data URL prefix)
+class ComposeLayoutRequest(BaseModel):
     layout_type: str  # e.g., "grid", "half-left", "split-horizontal"
+    chart_filenames: list[str]  # Ordered list of chart filenames (without .png)
 
 
 class UploadChartResponse(BaseModel):

@@ -21,11 +21,6 @@ vi.mock("../../services/api", () => ({
   resetSession: vi.fn(() => Promise.resolve()),
 }));
 
-// Mock html-to-image
-vi.mock("html-to-image", () => ({
-  toPng: vi.fn(() => Promise.resolve("data:image/png;base64,mockImageData")),
-}));
-
 describe("AISidebar", () => {
   const defaultProps = {
     isOpen: true,

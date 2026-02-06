@@ -180,6 +180,37 @@ describe("TemplateSelector", () => {
     expect(slots.length).toBe(4);
   });
 
+  it("calls onSaveTemplate with slot data when save is clicked", async () => {
+    const user = userEvent.setup();
+    const mockSave = vi.fn().mockResolvedValue();
+    const { container } = render(
+      <TemplateSelector
+        generatedCharts={mockCharts}
+        onSaveTemplate={mockSave}
+      />,
+    );
+
+    const buttons = screen.getAllByRole("button");
+    await user.click(buttons[0]); // Full template - 1 slot
+
+    // Simulate drop to fill the slot
+    const slot = container.querySelector(".template-slot");
+    act(() => {
+      fireEvent.drop(slot, {
+        dataTransfer: { getData: () => "1" },
+      });
+    });
+
+    // Click save
+    const saveButton = screen.getByRole("button", { name: /save/i });
+    await user.click(saveButton);
+
+    expect(mockSave).toHaveBeenCalledWith(
+      expect.objectContaining({ 0: expect.objectContaining({ id: 1 }) }),
+      "full",
+    );
+  });
+
   it("shows placeholder text in empty slots", async () => {
     const user = userEvent.setup();
     render(<TemplateSelector {...defaultProps} />);

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { toPng } from "html-to-image";
 import Header from "./components/Header";
 import SlidesViewer from "./components/SlidesViewer";
 import AISidebar from "./components/AISidebar";
@@ -7,13 +6,12 @@ import DataManager from "./components/DataManager";
 import TemplateSelector from "./components/TemplateSelector";
 import {
   extractChartFilename,
+  composeLayout,
   deleteChart,
   listTrash,
   restoreChart,
   getChartImageUrl,
-  uploadChart,
 } from "./services/api";
-import imageConfig from "../image-config.json";
 import "./App.css";
 
 function App() {
@@ -150,33 +148,21 @@ function App() {
     }
   };
 
-  const handleSaveTemplate = async (templateElement, templateType) => {
+  const handleSaveTemplate = async (slotCharts, layoutType) => {
     try {
-      // Store original transform and temporarily reset for full-size capture
-      const originalTransform = templateElement.style.transform;
-      templateElement.style.transform = "none";
+      // Extract filenames from chart image URLs
+      const chartFilenames = Object.keys(slotCharts)
+        .sort((a, b) => Number(a) - Number(b))
+        .map((slotIndex) => {
+          const chart = slotCharts[slotIndex];
+          return extractChartFilename(chart.imageUrl);
+        });
 
-      const dataUrl = await toPng(templateElement, {
-        backgroundColor: "transparent",
-        pixelRatio: 1,
-        width: imageConfig.width_px,
-        height: imageConfig.height_px,
-        skipFonts: true,
-        style: {
-          transform: "none",
-          background: "transparent",
-        },
-      });
-
-      // Restore original transform
-      templateElement.style.transform = originalTransform;
-
-      // Upload to backend
-      const result = await uploadChart(dataUrl, templateType);
+      const result = await composeLayout(chartFilenames, layoutType);
 
       const newChart = {
         id: Date.now(),
-        type: `template-${templateType}`,
+        type: `template-${layoutType}`,
         imageUrl: getChartImageUrl(result.chart_url),
         metadata: result.chart_metadata,
       };
@@ -184,10 +170,6 @@ function App() {
       setGeneratedCharts((prev) => [...prev, newChart]);
     } catch (err) {
       console.error("Failed to save template:", err);
-      // Restore transform on error
-      if (templateElement) {
-        templateElement.style.transform = "";
-      }
     }
   };
 

@@ -7,16 +7,11 @@ import {
   Save,
   X,
 } from "lucide-react";
-import imageConfig from "../../image-config.json";
 import "./TemplateSelector.css";
 
 // Display preview dimensions (16:9)
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 540;
-
-// Standard export dimensions from shared config
-const EXPORT_WIDTH = imageConfig.width_px;
-const EXPORT_HEIGHT = imageConfig.height_px;
 
 // Templates with variations (cycling through on repeated clicks)
 const TEMPLATES = {
@@ -55,7 +50,6 @@ function TemplateSelector({ generatedCharts, onSaveTemplate }) {
   const [variationIndex, setVariationIndex] = useState(0);
   const [slotCharts, setSlotCharts] = useState({});
   const [scale, setScale] = useState(1);
-  const templateRef = useRef(null);
   const containerRef = useRef(null);
 
   // Calculate scale to fit canvas in overlay
@@ -103,24 +97,8 @@ function TemplateSelector({ generatedCharts, onSaveTemplate }) {
   };
 
   const handleSave = async () => {
-    if (!templateRef.current || !currentVariation) return;
-
-    // Temporarily restore full size for high-quality capture
-    const originalWidth = templateRef.current.style.width;
-    const originalHeight = templateRef.current.style.height;
-
-    templateRef.current.style.width = `${EXPORT_WIDTH}px`;
-    templateRef.current.style.height = `${EXPORT_HEIGHT}px`;
-
-    // Wait for layout to update
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    await onSaveTemplate(templateRef.current, currentVariation.layout);
-
-    // Restore scaled size
-    templateRef.current.style.width = originalWidth;
-    templateRef.current.style.height = originalHeight;
-
+    if (!currentVariation) return;
+    await onSaveTemplate(slotCharts, currentVariation.layout);
     handleClearTemplate();
   };
 
@@ -190,7 +168,6 @@ function TemplateSelector({ generatedCharts, onSaveTemplate }) {
           <div className="template-canvas-container">
             <div
               className={`template-canvas layout-${currentVariation.layout}`}
-              ref={templateRef}
               style={{
                 width: CANVAS_WIDTH * scale,
                 height: CANVAS_HEIGHT * scale,
@@ -251,12 +228,7 @@ function TemplateSlot({ slotIndex, chart, onDrop }) {
       onDrop={handleDrop}
     >
       {chart ? (
-        <img
-          src={chart.imageUrl}
-          alt="Chart"
-          className="slot-chart-image"
-          crossOrigin="anonymous"
-        />
+        <img src={chart.imageUrl} alt="Chart" className="slot-chart-image" />
       ) : (
         <div className="slot-placeholder">
           <span>Drop chart here</span>

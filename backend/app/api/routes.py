@@ -15,7 +15,7 @@ from app.models.schemas import (
     TrashItem,
     TrashListResponse,
     RestoreChartResponse,
-    UploadChartRequest,
+    ComposeLayoutRequest,
     UploadChartResponse,
 )
 from app.agent.graph import get_agent
@@ -493,67 +493,99 @@ async def restore_chart(filename: str):
     )
 
 
-@router.post("/charts/upload", response_model=UploadChartResponse)
-async def upload_chart(request: UploadChartRequest):
-    """Upload a template layout image as a chart."""
-    import base64
+@router.post("/charts/compose-layout", response_model=UploadChartResponse)
+async def compose_layout_endpoint(request: ComposeLayoutRequest):
+    """Compose multiple charts into a layout image."""
     import time
+
+    from app.utils.layout_composer import (
+        VALID_LAYOUT_TYPES,
+        compose_layout,
+        get_slot_count,
+    )
+
+    # Validate layout type
+    if request.layout_type not in VALID_LAYOUT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid layout type: {request.layout_type}. "
+            f"Valid types: {VALID_LAYOUT_TYPES}",
+        )
+
+    # Validate slot count
+    expected_slots = get_slot_count(request.layout_type)
+    if len(request.chart_filenames) != expected_slots:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Layout '{request.layout_type}' requires {expected_slots} "
+            f"charts, got {len(request.chart_filenames)}",
+        )
 
     settings = get_settings()
     charts_path = Path(settings.charts_dir)
-    charts_path.mkdir(parents=True, exist_ok=True)
 
-    # Strip data URL prefix if present
-    image_data = request.image_data
-    if image_data.startswith("data:"):
-        # Format: data:image/png;base64,XXXX
-        try:
-            image_data = image_data.split(",", 1)[1]
-        except IndexError:
-            raise HTTPException(status_code=400, detail="Invalid data URL format")
+    # Validate chart filenames and resolve paths
+    chart_paths = []
+    for filename in request.chart_filenames:
+        # Security: validate filename format
+        if (
+            not filename.startswith("chart_")
+            or "/" in filename
+            or "\\" in filename
+            or ".." in filename
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid chart filename: {filename}",
+            )
+        path = charts_path / f"{filename}.png"
+        if not path.exists():
+            raise HTTPException(
+                status_code=404,
+                detail=f"Chart not found: {filename}",
+            )
+        chart_paths.append(path)
 
-    # Decode base64
+    # Compose layout image
     try:
-        png_bytes = base64.b64decode(image_data)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid base64 image data")
+        composed = compose_layout(request.layout_type, chart_paths)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to compose layout: {e}",
+        )
 
-    # Validate PNG magic bytes
-    if not png_bytes.startswith(b"\x89PNG"):
-        raise HTTPException(status_code=400, detail="Invalid PNG image")
-
-    # Generate filename
+    # Save composed image
     timestamp = int(time.time() * 1000)
     filename = f"chart_layout_{timestamp}"
     png_path = charts_path / f"{filename}.png"
     json_path = charts_path / f"{filename}.json"
 
-    # Write PNG file
+    charts_path.mkdir(parents=True, exist_ok=True)
+
     try:
-        with open(png_path, "wb") as f:
-            f.write(png_bytes)
+        composed.save(png_path, "PNG")
     except OSError as e:
         raise HTTPException(status_code=500, detail=f"Failed to save image: {e}")
 
-    # Create metadata
+    # Save metadata
     metadata = {
         "chart_type": "layout",
         "layout_type": request.layout_type,
         "source": "template_editor",
+        "composed_from": request.chart_filenames,
         "created_at": datetime.now().isoformat(),
     }
 
-    # Write metadata JSON
     try:
         with open(json_path, "w") as f:
             json.dump(metadata, f, indent=2)
     except OSError as e:
-        # Clean up PNG if JSON write fails
         png_path.unlink(missing_ok=True)
         raise HTTPException(status_code=500, detail=f"Failed to save metadata: {e}")
 
     chart_url = f"/static/charts/{filename}.png"
-    logger.info(f"Uploaded layout chart: {filename}")
+    logger.info(f"Composed layout chart: {filename}")
 
     return UploadChartResponse(
         success=True,

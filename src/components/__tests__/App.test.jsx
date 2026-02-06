@@ -4,11 +4,6 @@ import userEvent from "@testing-library/user-event";
 import App from "../../App";
 import { renderWithCleanState } from "../../test/utils";
 
-// Mock html-to-image
-vi.mock("html-to-image", () => ({
-  toPng: vi.fn(() => Promise.resolve("data:image/png;base64,mockImageData")),
-}));
-
 describe("App", () => {
   beforeEach(() => {
     localStorage.clear();

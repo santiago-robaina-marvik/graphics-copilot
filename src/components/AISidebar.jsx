@@ -468,15 +468,16 @@ function AISidebar({
                       >
                         <Download size={12} />
                       </button>
-                      {chart.metadata && (
-                        <button
-                          className="gallery-btn regenerate"
-                          onClick={() => handleRegenerateChart(chart)}
-                          title="Regenerate with current data"
-                        >
-                          <RefreshCw size={12} />
-                        </button>
-                      )}
+                      {chart.metadata &&
+                        chart.metadata.chart_type !== "layout" && (
+                          <button
+                            className="gallery-btn regenerate"
+                            onClick={() => handleRegenerateChart(chart)}
+                            title="Regenerate with current data"
+                          >
+                            <RefreshCw size={12} />
+                          </button>
+                        )}
                       <button
                         className="gallery-btn delete"
                         onClick={() => onChartDeleted(chart.id)}
