@@ -16,6 +16,16 @@ from app.logging_config import get_logger
 
 logger = get_logger("app.agent.tools.plotting")
 
+# Load standard image dimensions from shared config
+_config_path = Path(__file__).resolve().parents[4] / "image-config.json"
+with open(_config_path) as _f:
+    _image_config = json.load(_f)
+
+CHART_WIDTH_PX = _image_config["width_px"]
+CHART_HEIGHT_PX = _image_config["height_px"]
+CHART_DPI = _image_config["dpi"]
+CHART_FIGSIZE = (CHART_WIDTH_PX / CHART_DPI, CHART_HEIGHT_PX / CHART_DPI)
+
 
 def _save_chart(metadata: dict) -> tuple[str, dict]:
     """Save current matplotlib figure and metadata, return the URL path and metadata."""
@@ -28,8 +38,7 @@ def _save_chart(metadata: dict) -> tuple[str, dict]:
     plt.tight_layout()
     plt.savefig(
         filepath,
-        dpi=150,
-        bbox_inches="tight",
+        dpi=CHART_DPI,
         facecolor=theme.figure_facecolor,
         edgecolor="none",
     )
@@ -75,7 +84,7 @@ def _apply_theme():
             "xtick.color": theme.text_color,
             "ytick.color": theme.text_color,
             "grid.color": theme.grid_color,
-            "figure.figsize": (10, 6),
+            "figure.figsize": CHART_FIGSIZE,
         }
     )
 

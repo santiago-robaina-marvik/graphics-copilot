@@ -12,6 +12,9 @@ from app.agent.tools.plotting import (
     create_area_chart,
     _apply_theme,
     _save_chart,
+    CHART_WIDTH_PX,
+    CHART_HEIGHT_PX,
+    CHART_DPI,
 )
 from app.agent.tools.themes import set_theme, get_theme
 
@@ -38,6 +41,18 @@ class TestApplyTheme:
         _apply_theme()
         assert plt.rcParams["figure.facecolor"] == "#FFFFFF"
         assert plt.rcParams["text.color"] == "#2D3277"
+
+    def test_apply_theme_sets_standard_figsize(self):
+        """_apply_theme should set figsize from shared image config."""
+        _apply_theme()
+        expected = [CHART_WIDTH_PX / CHART_DPI, CHART_HEIGHT_PX / CHART_DPI]
+        assert plt.rcParams["figure.figsize"] == expected
+
+    def test_image_config_consistency(self):
+        """Chart dimensions should match shared image-config.json."""
+        assert CHART_WIDTH_PX == 1181
+        assert CHART_HEIGHT_PX == 650
+        assert CHART_DPI == 150
 
     def test_apply_theme_sets_seaborn_palette(self):
         """_apply_theme should set seaborn palette from theme."""

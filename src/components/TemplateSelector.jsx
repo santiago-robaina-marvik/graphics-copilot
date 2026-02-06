@@ -7,11 +7,16 @@ import {
   Save,
   X,
 } from "lucide-react";
+import imageConfig from "../../image-config.json";
 import "./TemplateSelector.css";
 
-// Google Slides standard dimensions (16:9)
+// Display preview dimensions (16:9)
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 540;
+
+// Standard export dimensions from shared config
+const EXPORT_WIDTH = imageConfig.width_px;
+const EXPORT_HEIGHT = imageConfig.height_px;
 
 // Templates with variations (cycling through on repeated clicks)
 const TEMPLATES = {
@@ -104,8 +109,8 @@ function TemplateSelector({ generatedCharts, onSaveTemplate }) {
     const originalWidth = templateRef.current.style.width;
     const originalHeight = templateRef.current.style.height;
 
-    templateRef.current.style.width = `${CANVAS_WIDTH}px`;
-    templateRef.current.style.height = `${CANVAS_HEIGHT}px`;
+    templateRef.current.style.width = `${EXPORT_WIDTH}px`;
+    templateRef.current.style.height = `${EXPORT_HEIGHT}px`;
 
     // Wait for layout to update
     await new Promise((resolve) => setTimeout(resolve, 100));

@@ -13,6 +13,7 @@ import {
   getChartImageUrl,
   uploadChart,
 } from "./services/api";
+import imageConfig from "../image-config.json";
 import "./App.css";
 
 function App() {
@@ -157,10 +158,10 @@ function App() {
 
       const dataUrl = await toPng(templateElement, {
         backgroundColor: "transparent",
-        pixelRatio: 2, // 2x for retina quality (outputs 1920x1080)
-        width: 960,
-        height: 540,
-        skipFonts: true, // Skip font embedding to avoid CORS errors with Google Fonts
+        pixelRatio: 1,
+        width: imageConfig.width_px,
+        height: imageConfig.height_px,
+        skipFonts: true,
         style: {
           transform: "none",
           background: "transparent",
