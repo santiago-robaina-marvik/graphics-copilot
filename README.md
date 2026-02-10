@@ -52,7 +52,7 @@ cp .env.example .env
 # Edit .env and add: GEMINI_API_KEY=your_key_here
 
 # Start backend server
-poetry run uvicorn app.main:app --reload --port 8000
+poetry run flask run --port 8000 --debug
 ```
 
 The backend API will be available at **http://localhost:8000**
@@ -70,7 +70,7 @@ You need **both** servers running:
 
    ```bash
    cd backend
-   poetry run uvicorn app.main:app --reload --port 8000
+   poetry run flask run --port 8000 --debug
    ```
 3. Open **http://localhost:5173** in your browser
 
@@ -206,7 +206,7 @@ The AI detects chart type from your prompt:
 
 **Backend:**
 
-- Python FastAPI + LangGraph
+- Python Flask + LangGraph
 - Google Gemini AI for natural language processing
 - Seaborn + Matplotlib for chart generation
 - Pandas for data manipulation

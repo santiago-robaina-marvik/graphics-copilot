@@ -50,7 +50,7 @@ class TestRegenerateEndpoint:
             )
 
             assert response.status_code == 200
-            data = response.json()
+            data = response.get_json()
             assert "chart_url" in data
             assert "chart_metadata" in data
             assert data["chart_metadata"]["chart_type"] == "bar"
@@ -78,7 +78,7 @@ class TestRegenerateEndpoint:
                 },
             )
             assert response1.status_code == 200
-            metadata1 = response1.json()["chart_metadata"]
+            metadata1 = response1.get_json()["chart_metadata"]
 
             # Second chart with category/sales (different y_column)
             response2 = client.post(
@@ -91,7 +91,7 @@ class TestRegenerateEndpoint:
                 },
             )
             assert response2.status_code == 200
-            metadata2 = response2.json()["chart_metadata"]
+            metadata2 = response2.get_json()["chart_metadata"]
 
             # Verify different columns were used
             assert metadata1["y_column"] == "value"
@@ -119,7 +119,7 @@ class TestRegenerateEndpoint:
             )
 
             assert response.status_code == 200
-            assert response.json()["chart_metadata"]["title"] == "Custom Title Here"
+            assert response.get_json()["chart_metadata"]["title"] == "Custom Title Here"
 
     def test_regenerate_with_different_theme(self, client, setup_dataframe, tmp_path):
         """Should regenerate chart with different theme."""
@@ -152,8 +152,8 @@ class TestRegenerateEndpoint:
 
             assert response_dark.status_code == 200
             assert response_light.status_code == 200
-            assert response_dark.json()["chart_metadata"]["theme"] == "meli_dark"
-            assert response_light.json()["chart_metadata"]["theme"] == "meli_light"
+            assert response_dark.get_json()["chart_metadata"]["theme"] == "meli_dark"
+            assert response_light.get_json()["chart_metadata"]["theme"] == "meli_light"
 
     def test_regenerate_line_chart(self, client, setup_dataframe, tmp_path):
         """Should regenerate a line chart."""
@@ -174,7 +174,7 @@ class TestRegenerateEndpoint:
             )
 
             assert response.status_code == 200
-            assert response.json()["chart_metadata"]["chart_type"] == "line"
+            assert response.get_json()["chart_metadata"]["chart_type"] == "line"
 
     def test_regenerate_distribution_chart(self, client, setup_dataframe, tmp_path):
         """Should regenerate a distribution chart with labels/values columns."""
@@ -195,7 +195,7 @@ class TestRegenerateEndpoint:
             )
 
             assert response.status_code == 200
-            metadata = response.json()["chart_metadata"]
+            metadata = response.get_json()["chart_metadata"]
             assert metadata["chart_type"] == "distribution"
             assert metadata["labels_column"] == "category"
             assert metadata["values_column"] == "value"
@@ -219,7 +219,7 @@ class TestRegenerateEndpoint:
             )
 
             assert response.status_code == 200
-            assert response.json()["chart_metadata"]["chart_type"] == "area"
+            assert response.get_json()["chart_metadata"]["chart_type"] == "area"
 
     def test_regenerate_unknown_chart_type_returns_400(self, client, setup_dataframe):
         """Should return 400 for unknown chart type."""
@@ -233,7 +233,7 @@ class TestRegenerateEndpoint:
         )
 
         assert response.status_code == 400
-        assert "Unknown chart type" in response.json()["detail"]
+        assert "Unknown chart type" in response.get_json()["error"]
 
     def test_regenerate_invalid_column_returns_400(self, client, setup_dataframe, tmp_path):
         """Should return 400 for non-existent column."""
@@ -254,7 +254,7 @@ class TestRegenerateEndpoint:
             )
 
             assert response.status_code == 400
-            assert "not found" in response.json()["detail"].lower()
+            assert "not found" in response.get_json()["error"].lower()
 
     def test_regenerate_no_data_returns_400(self, client):
         """Should return 400 when no data is loaded."""
@@ -270,7 +270,7 @@ class TestRegenerateEndpoint:
         )
 
         assert response.status_code == 400
-        assert "no data" in response.json()["detail"].lower()
+        assert "no data" in response.get_json()["error"].lower()
 
 
 class TestRegenerateWithFreshData:
@@ -306,7 +306,7 @@ class TestRegenerateWithFreshData:
             assert response.status_code == 200
             mock_fetch.assert_called_once_with("test_sheet_123", "0")
             # Verify the chart was created with fresh data (2 rows)
-            assert response.json()["chart_metadata"]["row_count"] == 2
+            assert response.get_json()["chart_metadata"]["row_count"] == 2
 
     def test_regenerate_uses_cached_data_when_no_sheet_id(self, client, setup_dataframe, tmp_path):
         """Should use cached data when no sheet_id is provided."""
@@ -331,7 +331,7 @@ class TestRegenerateWithFreshData:
             assert response.status_code == 200
             mock_fetch.assert_not_called()
             # Uses the 3-row sample_data from setup_dataframe fixture
-            assert response.json()["chart_metadata"]["row_count"] == 3
+            assert response.get_json()["chart_metadata"]["row_count"] == 3
 
     def test_regenerate_returns_400_on_sheet_fetch_error(self, client):
         """Should return 400 when Google Sheet fetch fails."""
@@ -349,4 +349,4 @@ class TestRegenerateWithFreshData:
             )
 
             assert response.status_code == 400
-            assert "Sheet not accessible" in response.json()["detail"]
+            assert "Sheet not accessible" in response.get_json()["error"]

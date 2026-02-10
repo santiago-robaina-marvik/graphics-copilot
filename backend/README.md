@@ -18,7 +18,7 @@ cp .env.example .env
 
 3. Run the server:
 ```bash
-poetry run uvicorn app.main:app --reload --port 8000
+poetry run flask run --port 8000 --debug
 ```
 
 ## API Endpoints

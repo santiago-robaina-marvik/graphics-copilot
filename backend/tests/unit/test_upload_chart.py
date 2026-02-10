@@ -35,7 +35,7 @@ class TestComposeLayout:
         )
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert data["success"] is True
         assert data["chart_url"].startswith("/static/charts/chart_layout_")
         assert data["chart_url"].endswith(".png")
@@ -66,7 +66,7 @@ class TestComposeLayout:
         )
 
         assert response.status_code == 200
-        assert response.json()["chart_metadata"]["layout_type"] == "full"
+        assert response.get_json()["chart_metadata"]["layout_type"] == "full"
 
     def test_compose_grid_layout(self, client, tmp_path, monkeypatch):
         """Test 2x2 grid layout."""
@@ -86,7 +86,7 @@ class TestComposeLayout:
         )
 
         assert response.status_code == 200
-        assert response.json()["chart_metadata"]["layout_type"] == "grid"
+        assert response.get_json()["chart_metadata"]["layout_type"] == "grid"
 
     def test_invalid_layout_type(self, client):
         """Test with invalid layout type."""
@@ -99,7 +99,7 @@ class TestComposeLayout:
         )
 
         assert response.status_code == 400
-        assert "Invalid layout type" in response.json()["detail"]
+        assert "Invalid layout type" in response.get_json()["error"]
 
     def test_wrong_chart_count(self, client, tmp_path, monkeypatch):
         """Test with wrong number of charts for layout."""
@@ -119,7 +119,7 @@ class TestComposeLayout:
         )
 
         assert response.status_code == 400
-        assert "requires 4 charts" in response.json()["detail"]
+        assert "requires 4 charts" in response.get_json()["error"]
 
     def test_missing_chart_file(self, client, tmp_path, monkeypatch):
         """Test with chart file that doesn't exist."""
@@ -137,7 +137,7 @@ class TestComposeLayout:
         )
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
+        assert "not found" in response.get_json()["error"]
 
     def test_invalid_filename_format(self, client):
         """Test with filename that doesn't start with chart_."""
@@ -150,7 +150,7 @@ class TestComposeLayout:
         )
 
         assert response.status_code == 400
-        assert "Invalid chart filename" in response.json()["detail"]
+        assert "Invalid chart filename" in response.get_json()["error"]
 
     def test_path_traversal_blocked(self, client):
         """Test that path traversal is blocked."""
@@ -163,4 +163,4 @@ class TestComposeLayout:
         )
 
         assert response.status_code == 400
-        assert "Invalid chart filename" in response.json()["detail"]
+        assert "Invalid chart filename" in response.get_json()["error"]

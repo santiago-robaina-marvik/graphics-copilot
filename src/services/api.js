@@ -62,8 +62,8 @@ export async function sendChatMessage(
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+      .catch(() => ({ error: "Unknown error" }));
+    throw new Error(error.error || `HTTP ${response.status}`);
   }
 
   return response.json();
@@ -107,8 +107,8 @@ export async function regenerateChart(metadata, theme = "meli_dark") {
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+      .catch(() => ({ error: "Unknown error" }));
+    throw new Error(error.error || `HTTP ${response.status}`);
   }
 
   return response.json();
@@ -138,8 +138,8 @@ export async function deleteChart(filename) {
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+      .catch(() => ({ error: "Unknown error" }));
+    throw new Error(error.error || `HTTP ${response.status}`);
   }
 
   return response.json();
@@ -155,8 +155,8 @@ export async function listTrash() {
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+      .catch(() => ({ error: "Unknown error" }));
+    throw new Error(error.error || `HTTP ${response.status}`);
   }
 
   return response.json();
@@ -178,8 +178,8 @@ export async function restoreChart(filename) {
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+      .catch(() => ({ error: "Unknown error" }));
+    throw new Error(error.error || `HTTP ${response.status}`);
   }
 
   return response.json();
@@ -206,8 +206,8 @@ export async function composeLayout(chartFilenames, layoutType) {
   if (!response.ok) {
     const error = await response
       .json()
-      .catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+      .catch(() => ({ error: "Unknown error" }));
+    throw new Error(error.error || `HTTP ${response.status}`);
   }
 
   return response.json();

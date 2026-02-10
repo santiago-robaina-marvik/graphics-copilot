@@ -108,7 +108,7 @@ describe("api service", () => {
       global.fetch.mockResolvedValue({
         ok: false,
         status: 500,
-        json: async () => ({ detail: "Server error" }),
+        json: async () => ({ error: "Server error" }),
       });
 
       await expect(
@@ -305,7 +305,7 @@ describe("api service", () => {
       global.fetch.mockResolvedValue({
         ok: false,
         status: 400,
-        json: async () => ({ detail: "Invalid layout type" }),
+        json: async () => ({ error: "Invalid layout type" }),
       });
 
       await expect(composeLayout(["chart_test"], "invalid")).rejects.toThrow(
@@ -353,7 +353,7 @@ describe("api service", () => {
       global.fetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
-        json: () => Promise.resolve({ detail: "Column not found" }),
+        json: () => Promise.resolve({ error: "Column not found" }),
       });
 
       const metadata = { chart_type: "bar", x_column: "invalid" };

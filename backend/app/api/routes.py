@@ -2,8 +2,9 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from flask import Blueprint, request, jsonify, abort
 from langchain_core.messages import HumanMessage
+from pydantic import ValidationError
 import re
 
 from app.models.schemas import (
@@ -33,7 +34,7 @@ from app.logging_config import get_logger
 
 logger = get_logger("app.api.routes")
 
-router = APIRouter()
+bp = Blueprint("api", __name__)
 
 
 def _read_chart_metadata(chart_url: str) -> dict | None:
@@ -53,46 +54,51 @@ def _read_chart_metadata(chart_url: str) -> dict | None:
     return None
 
 
-@router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+@bp.post("/chat")
+def chat():
     """
     Send a message to the chart agent.
     Optionally include data as a list of dictionaries (DataFrame rows).
     """
+    try:
+        req = ChatRequest(**request.get_json())
+    except ValidationError as e:
+        abort(400, description=str(e))
+
     logger.info("━━━ New chat request ━━━")
-    logger.info(f"Session: {request.session_id}")
-    logger.info(f"Message: {request.message[:100]}{'...' if len(request.message) > 100 else ''}")
+    logger.info(f"Session: {req.session_id}")
+    logger.info(f"Message: {req.message[:100]}{'...' if len(req.message) > 100 else ''}")
 
     try:
         # Fetch fresh data from Google Sheets if sheet source provided
-        if request.sheet_id:
+        if req.sheet_id:
             try:
-                logger.info(f"Fetching fresh data from sheet: {request.sheet_id}")
-                fresh_data = fetch_public_sheet(request.sheet_id, request.sheet_gid or "0")
+                logger.info(f"Fetching fresh data from sheet: {req.sheet_id}")
+                fresh_data = fetch_public_sheet(req.sheet_id, req.sheet_gid or "0")
                 set_dataframe(fresh_data)
                 set_data_source(
                     {
                         "type": "google_sheets",
-                        "sheet_id": request.sheet_id,
-                        "sheet_gid": request.sheet_gid or "0",
+                        "sheet_id": req.sheet_id,
+                        "sheet_gid": req.sheet_gid or "0",
                     }
                 )
                 logger.info(f"Loaded {len(fresh_data)} rows from Google Sheet")
             except SheetFetchError as e:
                 logger.warning(f"Sheet fetch failed, using cached data: {e}")
                 # Fall back to provided data if sheet fetch fails
-                if request.data:
-                    logger.info(f"Falling back to provided data: {len(request.data)} rows")
-                    set_dataframe(request.data)
+                if req.data:
+                    logger.info(f"Falling back to provided data: {len(req.data)} rows")
+                    set_dataframe(req.data)
                     set_data_source(None)  # Clear data source since using cached
-        elif request.data:
+        elif req.data:
             # No sheet source, use provided data
-            logger.info(f"Data provided: {len(request.data)} rows")
-            set_dataframe(request.data)
+            logger.info(f"Data provided: {len(req.data)} rows")
+            set_dataframe(req.data)
             set_data_source(None)  # No sheet source
 
         # Set the chart theme
-        theme_name = request.theme or "meli_dark"
+        theme_name = req.theme or "meli_dark"
         set_theme(theme_name)
         logger.info(f"Chart theme: {theme_name}")
 
@@ -100,11 +106,11 @@ async def chat(request: ChatRequest):
         agent = get_agent()
 
         # Configure session
-        config = {"configurable": {"thread_id": request.session_id}}
+        config = {"configurable": {"thread_id": req.session_id}}
 
         # Invoke the agent
         logger.info("Invoking agent...")
-        result = agent.invoke({"messages": [HumanMessage(content=request.message)]}, config=config)
+        result = agent.invoke({"messages": [HumanMessage(content=req.message)]}, config=config)
 
         # Extract the response
         messages = result["messages"]
@@ -145,31 +151,35 @@ async def chat(request: ChatRequest):
         # Get chart metadata from sidecar file if a chart was generated
         chart_metadata = _read_chart_metadata(chart_url)
 
-        return ChatResponse(
-            response=response_text,
-            chart_url=chart_url,
-            chart_metadata=chart_metadata,
-            session_id=request.session_id,
+        return jsonify(
+            ChatResponse(
+                response=response_text,
+                chart_url=chart_url,
+                chart_metadata=chart_metadata,
+                session_id=req.session_id,
+            ).model_dump()
         )
 
     except Exception as e:
         logger.error(f"Error in chat: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        abort(500, description=str(e))
 
 
-@router.post("/reset/{session_id}")
-async def reset_session(session_id: str):
+@bp.post("/reset/<session_id>")
+def reset_session(session_id):
     """Reset a chat session (clear conversation history)."""
     # The MemorySaver doesn't have a direct delete method,
     # but starting a new thread_id effectively creates a new session
-    return {
-        "status": "ok",
-        "message": f"Session {session_id} will be reset on next message",
-    }
+    return jsonify(
+        {
+            "status": "ok",
+            "message": f"Session {session_id} will be reset on next message",
+        }
+    )
 
 
-@router.get("/sessions/{session_id}/history")
-async def get_history(session_id: str):
+@bp.get("/sessions/<session_id>/history")
+def get_history(session_id):
     """Get conversation history for a session."""
     agent = get_agent()
     config = {"configurable": {"thread_id": session_id}}
@@ -187,94 +197,101 @@ async def get_history(session_id: str):
                 }
             )
 
-        return {"session_id": session_id, "history": history}
+        return jsonify({"session_id": session_id, "history": history})
     except Exception:
-        return {"session_id": session_id, "history": []}
+        return jsonify({"session_id": session_id, "history": []})
 
 
-@router.post("/regenerate", response_model=RegenerateResponse)
-async def regenerate_chart(request: RegenerateRequest):
+@bp.post("/regenerate")
+def regenerate_chart():
     """Regenerate a chart with specified parameters, optionally fetching fresh data."""
+    try:
+        req = RegenerateRequest(**request.get_json())
+    except ValidationError as e:
+        abort(400, description=str(e))
+
     # Fetch fresh data from Google Sheets if sheet source provided
-    if request.sheet_id:
+    if req.sheet_id:
         try:
-            logger.info(f"Fetching fresh data from sheet: {request.sheet_id}")
-            fresh_data = fetch_public_sheet(request.sheet_id, request.sheet_gid or "0")
+            logger.info(f"Fetching fresh data from sheet: {req.sheet_id}")
+            fresh_data = fetch_public_sheet(req.sheet_id, req.sheet_gid or "0")
             set_dataframe(fresh_data)
             set_data_source(
                 {
                     "type": "google_sheets",
-                    "sheet_id": request.sheet_id,
-                    "sheet_gid": request.sheet_gid or "0",
+                    "sheet_id": req.sheet_id,
+                    "sheet_gid": req.sheet_gid or "0",
                 }
             )
             logger.info(f"Loaded {len(fresh_data)} rows from Google Sheet")
         except SheetFetchError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            abort(400, description=str(e))
 
     # Set theme
-    set_theme(request.theme or "meli_dark")
+    set_theme(req.theme or "meli_dark")
 
     # Call appropriate chart function based on type
     chart_functions = {
         "bar": lambda: create_bar_chart.invoke(
             {
-                "x_column": request.x_column,
-                "y_column": request.y_column,
-                "title": request.title or "Bar Chart",
+                "x_column": req.x_column,
+                "y_column": req.y_column,
+                "title": req.title or "Bar Chart",
             }
         ),
         "line": lambda: create_line_chart.invoke(
             {
-                "x_column": request.x_column,
-                "y_column": request.y_column,
-                "title": request.title or "Line Chart",
+                "x_column": req.x_column,
+                "y_column": req.y_column,
+                "title": req.title or "Line Chart",
             }
         ),
         "distribution": lambda: create_distribution_chart.invoke(
             {
-                "labels_column": request.labels_column,
-                "values_column": request.values_column,
-                "title": request.title or "Distribution Chart",
+                "labels_column": req.labels_column,
+                "values_column": req.values_column,
+                "title": req.title or "Distribution Chart",
             }
         ),
         "area": lambda: create_area_chart.invoke(
             {
-                "x_column": request.x_column,
-                "y_column": request.y_column,
-                "title": request.title or "Area Chart",
+                "x_column": req.x_column,
+                "y_column": req.y_column,
+                "title": req.title or "Area Chart",
             }
         ),
     }
 
-    if request.chart_type not in chart_functions:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown chart type: {request.chart_type}. Valid types: {list(chart_functions.keys())}",
+    if req.chart_type not in chart_functions:
+        abort(
+            400,
+            description=f"Unknown chart type: {req.chart_type}. Valid types: {list(chart_functions.keys())}",
         )
 
     # Generate the chart
-    result = chart_functions[request.chart_type]()
+    result = chart_functions[req.chart_type]()
 
     # Check for errors
     if "not found" in result.lower() or "no data" in result.lower():
-        raise HTTPException(status_code=400, detail=result)
+        abort(400, description=result)
 
     # Extract chart URL from result string
     match = re.search(r"/static/charts/[^\s\"']+\.png", result)
     if not match:
-        raise HTTPException(status_code=500, detail="Failed to extract chart URL")
+        abort(500, description="Failed to extract chart URL")
 
     chart_url = match.group(0)
 
     # Read metadata from JSON sidecar file
     metadata = _read_chart_metadata(chart_url)
     if not metadata:
-        raise HTTPException(status_code=500, detail="Failed to read chart metadata")
+        abort(500, description="Failed to read chart metadata")
 
-    return RegenerateResponse(
-        chart_url=chart_url,
-        chart_metadata=metadata,
+    return jsonify(
+        RegenerateResponse(
+            chart_url=chart_url,
+            chart_metadata=metadata,
+        ).model_dump()
     )
 
 
@@ -318,13 +335,13 @@ def _purge_expired_trash() -> int:
 def _validate_chart_filename(filename: str) -> None:
     """Validate chart filename for security."""
     if not filename.startswith("chart_"):
-        raise HTTPException(status_code=400, detail="Invalid chart filename")
+        abort(400, description="Invalid chart filename")
     if "/" in filename or "\\" in filename or ".." in filename:
-        raise HTTPException(status_code=400, detail="Invalid filename: path traversal not allowed")
+        abort(400, description="Invalid filename: path traversal not allowed")
 
 
-@router.delete("/charts/{filename}", response_model=DeleteChartResponse)
-async def delete_chart(filename: str):
+@bp.delete("/charts/<filename>")
+def delete_chart(filename):
     """Move a chart to trash (soft delete)."""
     _validate_chart_filename(filename)
 
@@ -338,7 +355,7 @@ async def delete_chart(filename: str):
     json_file = charts_path / f"{base_filename}.json"
 
     if not png_file.exists():
-        raise HTTPException(status_code=404, detail=f"Chart not found: {filename}")
+        abort(404, description=f"Chart not found: {filename}")
 
     # Read existing metadata
     metadata = {}
@@ -364,19 +381,21 @@ async def delete_chart(filename: str):
         if json_file.exists():
             json_file.unlink()
     except OSError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to move chart to trash: {e}")
+        abort(500, description=f"Failed to move chart to trash: {e}")
 
     logger.info(f"Chart moved to trash: {base_filename}")
 
-    return DeleteChartResponse(
-        success=True,
-        message="Chart moved to trash",
-        filename=f"{base_filename}.png",
+    return jsonify(
+        DeleteChartResponse(
+            success=True,
+            message="Chart moved to trash",
+            filename=f"{base_filename}.png",
+        ).model_dump()
     )
 
 
-@router.get("/charts/trash", response_model=TrashListResponse)
-async def list_trash():
+@bp.get("/charts/trash")
+def list_trash():
     """List charts in trash, purging expired items first."""
     settings = get_settings()
     trash_path = _get_trash_dir()
@@ -417,11 +436,11 @@ async def list_trash():
     # Sort by deletion date (newest first)
     items.sort(key=lambda x: x.deleted_at, reverse=True)
 
-    return TrashListResponse(items=items, purged_count=purged_count)
+    return jsonify(TrashListResponse(items=items, purged_count=purged_count).model_dump())
 
 
-@router.post("/charts/trash/{filename}/restore", response_model=RestoreChartResponse)
-async def restore_chart(filename: str):
+@bp.post("/charts/trash/<filename>/restore")
+def restore_chart(filename):
     """Restore a chart from trash."""
     _validate_chart_filename(filename)
 
@@ -435,7 +454,7 @@ async def restore_chart(filename: str):
     trash_json = trash_path / f"{base_filename}.json"
 
     if not trash_png.exists():
-        raise HTTPException(status_code=404, detail=f"Chart not found in trash: {filename}")
+        abort(404, description=f"Chart not found in trash: {filename}")
 
     # Read metadata
     metadata = {}
@@ -460,22 +479,24 @@ async def restore_chart(filename: str):
                 json.dump(metadata, f, indent=2)
         trash_json.unlink(missing_ok=True)
     except OSError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to restore chart: {e}")
+        abort(500, description=f"Failed to restore chart: {e}")
 
     logger.info(f"Chart restored from trash: {base_filename}")
 
     chart_url = f"/static/charts/{base_filename}.png"
 
-    return RestoreChartResponse(
-        success=True,
-        message="Chart restored successfully",
-        chart_url=chart_url,
-        chart_metadata=metadata if metadata else None,
+    return jsonify(
+        RestoreChartResponse(
+            success=True,
+            message="Chart restored successfully",
+            chart_url=chart_url,
+            chart_metadata=metadata if metadata else None,
+        ).model_dump()
     )
 
 
-@router.post("/charts/compose-layout", response_model=UploadChartResponse)
-async def compose_layout_endpoint(request: ComposeLayoutRequest):
+@bp.post("/charts/compose-layout")
+def compose_layout_endpoint():
     """Compose multiple charts into a layout image."""
     import time
 
@@ -485,20 +506,24 @@ async def compose_layout_endpoint(request: ComposeLayoutRequest):
         get_slot_count,
     )
 
+    try:
+        req = ComposeLayoutRequest(**request.get_json())
+    except ValidationError as e:
+        abort(400, description=str(e))
+
     # Validate layout type
-    if request.layout_type not in VALID_LAYOUT_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid layout type: {request.layout_type}. Valid types: {VALID_LAYOUT_TYPES}",
+    if req.layout_type not in VALID_LAYOUT_TYPES:
+        abort(
+            400,
+            description=f"Invalid layout type: {req.layout_type}. Valid types: {VALID_LAYOUT_TYPES}",
         )
 
     # Validate slot count
-    expected_slots = get_slot_count(request.layout_type)
-    if len(request.chart_filenames) != expected_slots:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Layout '{request.layout_type}' requires {expected_slots} "
-            f"charts, got {len(request.chart_filenames)}",
+    expected_slots = get_slot_count(req.layout_type)
+    if len(req.chart_filenames) != expected_slots:
+        abort(
+            400,
+            description=f"Layout '{req.layout_type}' requires {expected_slots} charts, got {len(req.chart_filenames)}",
         )
 
     settings = get_settings()
@@ -506,28 +531,28 @@ async def compose_layout_endpoint(request: ComposeLayoutRequest):
 
     # Validate chart filenames and resolve paths
     chart_paths = []
-    for filename in request.chart_filenames:
+    for filename in req.chart_filenames:
         # Security: validate filename format
         if not filename.startswith("chart_") or "/" in filename or "\\" in filename or ".." in filename:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid chart filename: {filename}",
+            abort(
+                400,
+                description=f"Invalid chart filename: {filename}",
             )
         path = charts_path / f"{filename}.png"
         if not path.exists():
-            raise HTTPException(
-                status_code=404,
-                detail=f"Chart not found: {filename}",
+            abort(
+                404,
+                description=f"Chart not found: {filename}",
             )
         chart_paths.append(path)
 
     # Compose layout image
     try:
-        composed = compose_layout(request.layout_type, chart_paths)
+        composed = compose_layout(req.layout_type, chart_paths)
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to compose layout: {e}",
+        abort(
+            500,
+            description=f"Failed to compose layout: {e}",
         )
 
     # Save composed image
@@ -541,14 +566,14 @@ async def compose_layout_endpoint(request: ComposeLayoutRequest):
     try:
         composed.save(png_path, "PNG")
     except OSError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save image: {e}")
+        abort(500, description=f"Failed to save image: {e}")
 
     # Save metadata
     metadata = {
         "chart_type": "layout",
-        "layout_type": request.layout_type,
+        "layout_type": req.layout_type,
         "source": "template_editor",
-        "composed_from": request.chart_filenames,
+        "composed_from": req.chart_filenames,
         "created_at": datetime.now().isoformat(),
     }
 
@@ -557,13 +582,15 @@ async def compose_layout_endpoint(request: ComposeLayoutRequest):
             json.dump(metadata, f, indent=2)
     except OSError as e:
         png_path.unlink(missing_ok=True)
-        raise HTTPException(status_code=500, detail=f"Failed to save metadata: {e}")
+        abort(500, description=f"Failed to save metadata: {e}")
 
     chart_url = f"/static/charts/{filename}.png"
     logger.info(f"Composed layout chart: {filename}")
 
-    return UploadChartResponse(
-        success=True,
-        chart_url=chart_url,
-        chart_metadata=metadata,
+    return jsonify(
+        UploadChartResponse(
+            success=True,
+            chart_url=chart_url,
+            chart_metadata=metadata,
+        ).model_dump()
     )

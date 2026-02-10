@@ -3,15 +3,15 @@
 import pytest
 import pandas as pd
 from unittest.mock import MagicMock, patch
-from fastapi.testclient import TestClient
 
 from app.main import app
 
 
 @pytest.fixture
 def client():
-    """Create a test client for FastAPI app."""
-    return TestClient(app)
+    """Create a test client for Flask app."""
+    app.config["TESTING"] = True
+    return app.test_client()
 
 
 @pytest.fixture

@@ -1,16 +1,6 @@
 """Integration tests for app/api/routes.py"""
 
-import pytest
 from unittest.mock import patch, MagicMock
-from fastapi.testclient import TestClient
-
-from app.main import app
-
-
-@pytest.fixture
-def client():
-    """Create test client."""
-    return TestClient(app)
 
 
 class TestHealthEndpoint:
@@ -21,7 +11,7 @@ class TestHealthEndpoint:
         response = client.get("/health")
 
         assert response.status_code == 200
-        assert response.json() == {"status": "ok"}
+        assert response.get_json() == {"status": "ok"}
 
 
 class TestChatEndpoint:
@@ -37,7 +27,7 @@ class TestChatEndpoint:
         response = client.post("/api/chat", json={"message": "Hello", "session_id": "test-session-123"})
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert "response" in data
         assert data["session_id"] == "test-session-123"
 
@@ -76,7 +66,7 @@ class TestChatEndpoint:
         )
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert data["chart_url"] == "/static/charts/chart_123.png"
 
     @patch("app.api.routes.get_agent")
@@ -94,7 +84,7 @@ class TestChatEndpoint:
         response = client.post("/api/chat", json={"message": "Hello", "session_id": "test-123"})
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert "Part 1" in data["response"]
         assert "Part 2" in data["response"]
 
@@ -108,7 +98,7 @@ class TestChatEndpoint:
         response = client.post("/api/chat", json={"message": "Hello", "session_id": "test-123"})
 
         assert response.status_code == 500
-        assert "LLM API error" in response.json()["detail"]
+        assert "LLM API error" in response.get_json()["error"]
 
     def test_chat_validates_request(self, client):
         """Chat should validate required fields."""
@@ -120,7 +110,7 @@ class TestChatEndpoint:
             },
         )
 
-        assert response.status_code == 422  # Validation error
+        assert response.status_code == 400  # Validation error
 
 
 class TestResetSessionEndpoint:
@@ -131,7 +121,7 @@ class TestResetSessionEndpoint:
         response = client.post("/api/reset/test-session-123")
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert data["status"] == "ok"
         assert "test-session-123" in data["message"]
 
@@ -156,7 +146,7 @@ class TestHistoryEndpoint:
         response = client.get("/api/sessions/test-123/history")
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert len(data) == 2
 
     @patch("app.api.routes.get_agent")
@@ -171,6 +161,6 @@ class TestHistoryEndpoint:
         response = client.get("/api/sessions/new-session/history")
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert data["history"] == []
         assert data["session_id"] == "new-session"

@@ -41,7 +41,7 @@ export const handlers = [
     const filename = params.filename.replace(".png", "");
     if (filename === "chart_nonexistent") {
       return HttpResponse.json(
-        { detail: "Chart not found: chart_nonexistent" },
+        { error: "Chart not found: chart_nonexistent" },
         { status: 404 },
       );
     }
@@ -87,7 +87,7 @@ export const handlers = [
     const filename = params.filename.replace(".png", "");
     if (filename === "chart_nonexistent") {
       return HttpResponse.json(
-        { detail: "Chart not found in trash: chart_nonexistent" },
+        { error: "Chart not found in trash: chart_nonexistent" },
         { status: 404 },
       );
     }

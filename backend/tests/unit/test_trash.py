@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
 
 import pytest
-from fastapi.testclient import TestClient
 
 from app.main import app
 from app.config import get_settings
@@ -154,12 +153,12 @@ class TestTrashRoutes:
 
     def test_delete_moves_to_trash(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """DELETE should move chart files to trash directory."""
-        client = TestClient(app)
+        client = app.test_client()
 
         response = client.delete(f"/api/charts/{test_chart}")
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert data["success"] is True
         assert data["message"] == "Chart moved to trash"
         assert data["filename"] == f"{test_chart}.png"
@@ -182,21 +181,21 @@ class TestTrashRoutes:
 
     def test_delete_nonexistent_returns_404(self, mock_settings_with_temp_dir):
         """DELETE nonexistent chart should return 404."""
-        client = TestClient(app)
+        client = app.test_client()
 
         response = client.delete("/api/charts/chart_nonexistent")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.get_json()["error"].lower()
 
     def test_delete_validates_filename(self, mock_settings_with_temp_dir):
         """DELETE should reject invalid filenames (must start with chart_)."""
-        client = TestClient(app)
+        client = app.test_client()
 
         # Test invalid prefix - must start with chart_
         response = client.delete("/api/charts/notachart.png")
         assert response.status_code == 400
-        assert "invalid" in response.json()["detail"].lower()
+        assert "invalid" in response.get_json()["error"].lower()
 
         # Test empty-like chart name
         response = client.delete("/api/charts/chart_")
@@ -204,18 +203,18 @@ class TestTrashRoutes:
 
     def test_list_trash_empty(self, mock_settings_with_temp_dir):
         """GET trash should return empty list when trash is empty."""
-        client = TestClient(app)
+        client = app.test_client()
 
         response = client.get("/api/charts/trash")
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert data["items"] == []
         assert data["purged_count"] == 0
 
     def test_list_trash_with_items(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """GET trash should list items in trash."""
-        client = TestClient(app)
+        client = app.test_client()
 
         # First delete the chart
         client.delete(f"/api/charts/{test_chart}")
@@ -224,7 +223,7 @@ class TestTrashRoutes:
         response = client.get("/api/charts/trash")
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert len(data["items"]) == 1
         assert data["items"][0]["filename"] == f"{test_chart}.png"
         assert "deleted_at" in data["items"][0]
@@ -235,7 +234,7 @@ class TestTrashRoutes:
 
     def test_list_purges_expired(self, mock_settings_with_temp_dir, temp_charts_dir):
         """GET trash should purge items older than retention period."""
-        client = TestClient(app)
+        client = app.test_client()
         trash_dir = temp_charts_dir / "trash"
 
         # Create an expired item (8 days old)
@@ -257,7 +256,7 @@ class TestTrashRoutes:
         response = client.get("/api/charts/trash")
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert data["purged_count"] == 1
         assert len(data["items"]) == 1
         assert data["items"][0]["filename"] == f"{recent_chart}.png"
@@ -268,7 +267,7 @@ class TestTrashRoutes:
 
     def test_restore_moves_back(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """POST restore should move chart back to charts directory."""
-        client = TestClient(app)
+        client = app.test_client()
 
         # First delete the chart
         client.delete(f"/api/charts/{test_chart}")
@@ -277,7 +276,7 @@ class TestTrashRoutes:
         response = client.post(f"/api/charts/trash/{test_chart}/restore")
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.get_json()
         assert data["success"] is True
         assert data["message"] == "Chart restored successfully"
         assert data["chart_url"] == f"/static/charts/{test_chart}.png"
@@ -292,7 +291,7 @@ class TestTrashRoutes:
 
     def test_restore_removes_deleted_at(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """POST restore should remove deleted_at from metadata."""
-        client = TestClient(app)
+        client = app.test_client()
 
         # Delete then restore
         client.delete(f"/api/charts/{test_chart}")
@@ -308,37 +307,37 @@ class TestTrashRoutes:
 
     def test_restore_nonexistent_returns_404(self, mock_settings_with_temp_dir):
         """POST restore nonexistent chart should return 404."""
-        client = TestClient(app)
+        client = app.test_client()
 
         response = client.post("/api/charts/trash/chart_nonexistent/restore")
 
         assert response.status_code == 404
-        assert "not found in trash" in response.json()["detail"].lower()
+        assert "not found in trash" in response.get_json()["error"].lower()
 
     def test_restore_validates_filename(self, mock_settings_with_temp_dir):
         """POST restore should reject invalid filenames (must start with chart_)."""
-        client = TestClient(app)
+        client = app.test_client()
 
         # Test invalid prefix - must start with chart_
         response = client.post("/api/charts/trash/notachart/restore")
         assert response.status_code == 400
-        assert "invalid" in response.json()["detail"].lower()
+        assert "invalid" in response.get_json()["error"].lower()
 
     def test_delete_with_extension(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """DELETE should work with .png extension in filename."""
-        client = TestClient(app)
+        client = app.test_client()
 
         response = client.delete(f"/api/charts/{test_chart}.png")
 
         assert response.status_code == 200
-        assert response.json()["success"] is True
+        assert response.get_json()["success"] is True
 
     def test_restore_with_extension(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """POST restore should work with .png extension in filename."""
-        client = TestClient(app)
+        client = app.test_client()
 
         client.delete(f"/api/charts/{test_chart}")
         response = client.post(f"/api/charts/trash/{test_chart}.png/restore")
 
         assert response.status_code == 200
-        assert response.json()["success"] is True
+        assert response.get_json()["success"] is True

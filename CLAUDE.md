@@ -15,9 +15,9 @@ Slides AI Assistant - An AI-powered presentation tool that generates charts from
 - All state managed in `App.jsx` via useState hooks, passed down via props (no Context/Redux)
 - localStorage persistence pattern: lazy init `useState(() => localStorage.getItem(...))` + `useEffect` to save
 
-**Backend (`backend/` directory)**: Python FastAPI + LangGraph
+**Backend (`backend/` directory)**: Python Flask + LangGraph
 
-- Entry: `app/main.py` - FastAPI app with CORS, static file serving, `/api` routes
+- Entry: `app/main.py` - Flask app with CORS, static file serving, `/api` routes
 - Routes: `app/api/routes.py` - `/api/chat` main endpoint, `/api/reset/{session_id}`, `/api/sessions/{session_id}/history`
 - Agent: `app/agent/graph.py` - LangGraph ReAct agent with Gemini, singleton pattern via `get_agent()`
 - Tools: `app/agent/tools/dataframe.py` (37 data manipulation tools), `app/agent/tools/plotting.py` (4 chart types)
@@ -49,7 +49,7 @@ cd backend
 poetry install                                     # Install dependencies
 cp .env.example .env                               # Add GEMINI_API_KEY
 
-poetry run uvicorn app.main:app --reload --port 8000  # Start server
+poetry run flask run --port 8000 --debug                  # Start server
 ```
 
 **Run tests:**
@@ -139,7 +139,7 @@ def tool_name(param: str) -> str:
 - MSW handlers: `src/test/mocks/handlers.js`
 - Coverage thresholds: 90% branches, 95% functions/lines/statements
 
-**Backend**: Pytest with asyncio
+**Backend**: Pytest
 
 - Fixtures in `backend/conftest.py` - `client`, `sample_dataframe`, `mock_agent`
 - Auto-resets DataFrame state between tests via `reset_dataframe_state` fixture
