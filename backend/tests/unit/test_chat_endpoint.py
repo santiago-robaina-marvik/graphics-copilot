@@ -23,9 +23,9 @@ class TestChatWithFreshData:
 
             # Mock the agent to return a simple response
             mock_result = MagicMock()
-            mock_result.__getitem__ = lambda self, key: {
-                "messages": [MagicMock(content="Data loaded successfully")]
-            }[key]
+            mock_result.__getitem__ = lambda self, key: {"messages": [MagicMock(content="Data loaded successfully")]}[
+                key
+            ]
             mock_agent.return_value.invoke.return_value = mock_result
 
             response = client.post(
@@ -53,9 +53,7 @@ class TestChatWithFreshData:
             mock_fetch.side_effect = SheetFetchError("Network error")
 
             mock_result = MagicMock()
-            mock_result.__getitem__ = lambda self, key: {
-                "messages": [MagicMock(content="Using fallback data")]
-            }[key]
+            mock_result.__getitem__ = lambda self, key: {"messages": [MagicMock(content="Using fallback data")]}[key]
             mock_agent.return_value.invoke.return_value = mock_result
 
             response = client.post(
@@ -82,9 +80,7 @@ class TestChatWithFreshData:
             patch("app.api.routes.set_dataframe") as mock_set_df,
         ):
             mock_result = MagicMock()
-            mock_result.__getitem__ = lambda self, key: {
-                "messages": [MagicMock(content="OK")]
-            }[key]
+            mock_result.__getitem__ = lambda self, key: {"messages": [MagicMock(content="OK")]}[key]
             mock_agent.return_value.invoke.return_value = mock_result
 
             response = client.post(

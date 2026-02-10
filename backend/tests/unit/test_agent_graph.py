@@ -9,9 +9,7 @@ class TestCreateAgent:
     @patch("app.agent.graph.ChatGoogleGenerativeAI")
     @patch("app.agent.graph.create_react_agent")
     @patch("app.agent.graph.get_settings")
-    def test_create_agent_initializes_llm(
-        self, mock_settings, mock_create_agent, mock_llm
-    ):
+    def test_create_agent_initializes_llm(self, mock_settings, mock_create_agent, mock_llm):
         """create_agent should initialize LLM with correct settings."""
         mock_settings.return_value.gemini_api_key = "test-key"
         mock_settings.return_value.gemini_model = "test-model"
@@ -29,9 +27,7 @@ class TestCreateAgent:
     @patch("app.agent.graph.ChatGoogleGenerativeAI")
     @patch("app.agent.graph.create_react_agent")
     @patch("app.agent.graph.get_settings")
-    def test_create_agent_registers_all_tools(
-        self, mock_settings, mock_create_agent, mock_llm
-    ):
+    def test_create_agent_registers_all_tools(self, mock_settings, mock_create_agent, mock_llm):
         """create_agent should register all 27 tools."""
         mock_settings.return_value.gemini_api_key = "test-key"
         mock_settings.return_value.gemini_model = "test-model"

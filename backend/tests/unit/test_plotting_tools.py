@@ -71,9 +71,7 @@ class TestSaveChart:
     @patch("app.agent.tools.plotting.get_settings")
     @patch("matplotlib.pyplot.savefig")
     @patch("matplotlib.pyplot.close")
-    def test_save_chart_returns_url_and_metadata(
-        self, mock_close, mock_savefig, mock_settings, tmp_path
-    ):
+    def test_save_chart_returns_url_and_metadata(self, mock_close, mock_savefig, mock_settings, tmp_path):
         """_save_chart should return URL path and metadata."""
         mock_settings.return_value.charts_dir = str(tmp_path)
         set_theme("meli_dark")
@@ -95,9 +93,7 @@ class TestSaveChart:
     @patch("app.agent.tools.plotting.get_settings")
     @patch("matplotlib.pyplot.savefig")
     @patch("matplotlib.pyplot.close")
-    def test_save_chart_uses_theme_facecolor(
-        self, mock_close, mock_savefig, mock_settings, tmp_path
-    ):
+    def test_save_chart_uses_theme_facecolor(self, mock_close, mock_savefig, mock_settings, tmp_path):
         """_save_chart should use theme facecolor."""
         mock_settings.return_value.charts_dir = str(tmp_path)
         set_theme("meli_light")
@@ -120,9 +116,7 @@ class TestCreateBarChart:
         mock_save.return_value = ("/static/charts/test.png", {"chart_type": "bar"})
         set_dataframe(sample_dataframe.to_dict(orient="records"))
 
-        result = create_bar_chart.invoke(
-            {"x_column": "Product", "y_column": "Revenue", "title": "Test Chart"}
-        )
+        result = create_bar_chart.invoke({"x_column": "Product", "y_column": "Revenue", "title": "Test Chart"})
 
         assert "Bar chart created" in result
         assert "/static/charts/" in result
@@ -167,9 +161,7 @@ class TestCreateDistributionChart:
         )
         set_dataframe(sample_dataframe.to_dict(orient="records"))
 
-        result = create_distribution_chart.invoke(
-            {"labels_column": "Product", "values_column": "Revenue"}
-        )
+        result = create_distribution_chart.invoke({"labels_column": "Product", "values_column": "Revenue"})
 
         assert "Distribution chart created" in result
 
@@ -182,9 +174,7 @@ class TestCreateDistributionChart:
         )
         set_dataframe(large_dataframe.to_dict(orient="records"))
 
-        result = create_distribution_chart.invoke(
-            {"labels_column": "ID", "values_column": "Value"}
-        )
+        result = create_distribution_chart.invoke({"labels_column": "ID", "values_column": "Value"})
 
         assert "Distribution chart created" in result
 

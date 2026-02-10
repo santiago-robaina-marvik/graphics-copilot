@@ -152,9 +152,7 @@ def test_chart(temp_charts_dir):
 class TestTrashRoutes:
     """Tests for trash-related API routes."""
 
-    def test_delete_moves_to_trash(
-        self, mock_settings_with_temp_dir, test_chart, temp_charts_dir
-    ):
+    def test_delete_moves_to_trash(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """DELETE should move chart files to trash directory."""
         client = TestClient(app)
 
@@ -215,9 +213,7 @@ class TestTrashRoutes:
         assert data["items"] == []
         assert data["purged_count"] == 0
 
-    def test_list_trash_with_items(
-        self, mock_settings_with_temp_dir, test_chart, temp_charts_dir
-    ):
+    def test_list_trash_with_items(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """GET trash should list items in trash."""
         client = TestClient(app)
 
@@ -270,9 +266,7 @@ class TestTrashRoutes:
         assert not (trash_dir / f"{old_chart}.png").exists()
         assert not (trash_dir / f"{old_chart}.json").exists()
 
-    def test_restore_moves_back(
-        self, mock_settings_with_temp_dir, test_chart, temp_charts_dir
-    ):
+    def test_restore_moves_back(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """POST restore should move chart back to charts directory."""
         client = TestClient(app)
 
@@ -296,9 +290,7 @@ class TestTrashRoutes:
         assert not (temp_charts_dir / "trash" / f"{test_chart}.png").exists()
         assert not (temp_charts_dir / "trash" / f"{test_chart}.json").exists()
 
-    def test_restore_removes_deleted_at(
-        self, mock_settings_with_temp_dir, test_chart, temp_charts_dir
-    ):
+    def test_restore_removes_deleted_at(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """POST restore should remove deleted_at from metadata."""
         client = TestClient(app)
 
@@ -332,9 +324,7 @@ class TestTrashRoutes:
         assert response.status_code == 400
         assert "invalid" in response.json()["detail"].lower()
 
-    def test_delete_with_extension(
-        self, mock_settings_with_temp_dir, test_chart, temp_charts_dir
-    ):
+    def test_delete_with_extension(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """DELETE should work with .png extension in filename."""
         client = TestClient(app)
 
@@ -343,9 +333,7 @@ class TestTrashRoutes:
         assert response.status_code == 200
         assert response.json()["success"] is True
 
-    def test_restore_with_extension(
-        self, mock_settings_with_temp_dir, test_chart, temp_charts_dir
-    ):
+    def test_restore_with_extension(self, mock_settings_with_temp_dir, test_chart, temp_charts_dir):
         """POST restore should work with .png extension in filename."""
         client = TestClient(app)
 

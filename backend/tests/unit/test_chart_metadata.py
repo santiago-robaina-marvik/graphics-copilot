@@ -210,9 +210,7 @@ class TestReadChartMetadata:
 class TestChartMetadataWithDataSource:
     """Test that chart metadata includes data source when available."""
 
-    def test_bar_chart_includes_data_source_in_metadata(
-        self, setup_dataframe, tmp_path
-    ):
+    def test_bar_chart_includes_data_source_in_metadata(self, setup_dataframe, tmp_path):
         """Bar chart metadata should include data_source when set."""
         set_data_source(
             {

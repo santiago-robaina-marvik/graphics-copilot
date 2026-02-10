@@ -61,18 +61,14 @@ async def chat(request: ChatRequest):
     """
     logger.info("━━━ New chat request ━━━")
     logger.info(f"Session: {request.session_id}")
-    logger.info(
-        f"Message: {request.message[:100]}{'...' if len(request.message) > 100 else ''}"
-    )
+    logger.info(f"Message: {request.message[:100]}{'...' if len(request.message) > 100 else ''}")
 
     try:
         # Fetch fresh data from Google Sheets if sheet source provided
         if request.sheet_id:
             try:
                 logger.info(f"Fetching fresh data from sheet: {request.sheet_id}")
-                fresh_data = fetch_public_sheet(
-                    request.sheet_id, request.sheet_gid or "0"
-                )
+                fresh_data = fetch_public_sheet(request.sheet_id, request.sheet_gid or "0")
                 set_dataframe(fresh_data)
                 set_data_source(
                     {
@@ -86,9 +82,7 @@ async def chat(request: ChatRequest):
                 logger.warning(f"Sheet fetch failed, using cached data: {e}")
                 # Fall back to provided data if sheet fetch fails
                 if request.data:
-                    logger.info(
-                        f"Falling back to provided data: {len(request.data)} rows"
-                    )
+                    logger.info(f"Falling back to provided data: {len(request.data)} rows")
                     set_dataframe(request.data)
                     set_data_source(None)  # Clear data source since using cached
         elif request.data:
@@ -110,9 +104,7 @@ async def chat(request: ChatRequest):
 
         # Invoke the agent
         logger.info("Invoking agent...")
-        result = agent.invoke(
-            {"messages": [HumanMessage(content=request.message)]}, config=config
-        )
+        result = agent.invoke({"messages": [HumanMessage(content=request.message)]}, config=config)
 
         # Extract the response
         messages = result["messages"]
@@ -140,16 +132,12 @@ async def chat(request: ChatRequest):
         for msg in reversed(messages):
             if hasattr(msg, "content") and "/static/charts/" in str(msg.content):
                 # Extract the URL from the message
-                match = re.search(
-                    r'/static/charts/[^\s"\'\.,\)]+\.png', str(msg.content)
-                )
+                match = re.search(r'/static/charts/[^\s"\'\.,\)]+\.png', str(msg.content))
                 if match:
                     chart_url = match.group(0)
                     break
 
-        logger.info(
-            f"Response: {response_text[:100]}{'...' if len(response_text) > 100 else ''}"
-        )
+        logger.info(f"Response: {response_text[:100]}{'...' if len(response_text) > 100 else ''}")
         if chart_url:
             logger.info(f"Chart generated: {chart_url}")
         logger.info("━━━ Request complete ━━━\n")
@@ -262,8 +250,7 @@ async def regenerate_chart(request: RegenerateRequest):
     if request.chart_type not in chart_functions:
         raise HTTPException(
             status_code=400,
-            detail=f"Unknown chart type: {request.chart_type}. "
-            f"Valid types: {list(chart_functions.keys())}",
+            detail=f"Unknown chart type: {request.chart_type}. Valid types: {list(chart_functions.keys())}",
         )
 
     # Generate the chart
@@ -333,9 +320,7 @@ def _validate_chart_filename(filename: str) -> None:
     if not filename.startswith("chart_"):
         raise HTTPException(status_code=400, detail="Invalid chart filename")
     if "/" in filename or "\\" in filename or ".." in filename:
-        raise HTTPException(
-            status_code=400, detail="Invalid filename: path traversal not allowed"
-        )
+        raise HTTPException(status_code=400, detail="Invalid filename: path traversal not allowed")
 
 
 @router.delete("/charts/{filename}", response_model=DeleteChartResponse)
@@ -379,9 +364,7 @@ async def delete_chart(filename: str):
         if json_file.exists():
             json_file.unlink()
     except OSError as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to move chart to trash: {e}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to move chart to trash: {e}")
 
     logger.info(f"Chart moved to trash: {base_filename}")
 
@@ -452,9 +435,7 @@ async def restore_chart(filename: str):
     trash_json = trash_path / f"{base_filename}.json"
 
     if not trash_png.exists():
-        raise HTTPException(
-            status_code=404, detail=f"Chart not found in trash: {filename}"
-        )
+        raise HTTPException(status_code=404, detail=f"Chart not found in trash: {filename}")
 
     # Read metadata
     metadata = {}
@@ -508,8 +489,7 @@ async def compose_layout_endpoint(request: ComposeLayoutRequest):
     if request.layout_type not in VALID_LAYOUT_TYPES:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid layout type: {request.layout_type}. "
-            f"Valid types: {VALID_LAYOUT_TYPES}",
+            detail=f"Invalid layout type: {request.layout_type}. Valid types: {VALID_LAYOUT_TYPES}",
         )
 
     # Validate slot count
@@ -528,12 +508,7 @@ async def compose_layout_endpoint(request: ComposeLayoutRequest):
     chart_paths = []
     for filename in request.chart_filenames:
         # Security: validate filename format
-        if (
-            not filename.startswith("chart_")
-            or "/" in filename
-            or "\\" in filename
-            or ".." in filename
-        ):
+        if not filename.startswith("chart_") or "/" in filename or "\\" in filename or ".." in filename:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid chart filename: {filename}",

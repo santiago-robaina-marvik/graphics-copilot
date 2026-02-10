@@ -28,9 +28,7 @@ def set_dataframe(data: list[dict] | None):
     if data:
         _current_df = pd.DataFrame(data)
         _original_df = _current_df.copy()  # Keep original for reset
-        logger.info(
-            f"DataFrame set: {_current_df.shape[0]} rows, {_current_df.shape[1]} columns"
-        )
+        logger.info(f"DataFrame set: {_current_df.shape[0]} rows, {_current_df.shape[1]} columns")
         logger.debug(f"Columns: {list(_current_df.columns)}")
     else:
         _current_df = None
@@ -160,9 +158,7 @@ def filter_date_range(date_column: str, start_date: str, end_date: str) -> str:
         start_date: Start date (e.g., '2026-10-01', '10/1/2026', 'October 2026')
         end_date: End date (e.g., '2026-12-31', '12/31/2026', 'December 2026')
     """
-    logger.info(
-        f"Tool: filter_date_range(date_column='{date_column}', start='{start_date}', end='{end_date}')"
-    )
+    logger.info(f"Tool: filter_date_range(date_column='{date_column}', start='{start_date}', end='{end_date}')")
     global _current_df
     df = get_dataframe()
     if df is None:
@@ -174,9 +170,7 @@ def filter_date_range(date_column: str, start_date: str, end_date: str) -> str:
     try:
         # Convert column to datetime
         df_copy = df.copy()
-        df_copy[date_column] = pd.to_datetime(
-            df_copy[date_column], infer_datetime_format=True
-        )
+        df_copy[date_column] = pd.to_datetime(df_copy[date_column])
 
         # Parse start and end dates
         start = pd.to_datetime(start_date)
@@ -195,9 +189,7 @@ def filter_date_range(date_column: str, start_date: str, end_date: str) -> str:
         filtered = df[mask]
         _current_df = filtered
 
-        logger.info(
-            f"Date filtered: {len(df)} → {len(filtered)} rows ({start.date()} to {end.date()})"
-        )
+        logger.info(f"Date filtered: {len(df)} → {len(filtered)} rows ({start.date()} to {end.date()})")
         return f"Filtered to {len(filtered)} rows where {date_column} is between {start.date()} and {end.date()}\n{filtered.to_string()}"
     except Exception as e:
         logger.error(f"Date parsing error: {e}")
@@ -223,9 +215,7 @@ def get_last_n_rows(n: int, date_column: str = "") -> str:
     if date_column and date_column in df.columns:
         try:
             df_sorted = df.copy()
-            df_sorted[date_column] = pd.to_datetime(
-                df_sorted[date_column], infer_datetime_format=True
-            )
+            df_sorted[date_column] = pd.to_datetime(df_sorted[date_column])
             df_sorted = df_sorted.sort_values(date_column)
             result = df_sorted.tail(n)
             # Keep original df format but filtered rows
@@ -250,9 +240,7 @@ def group_and_aggregate(group_by: str, agg_column: str, agg_func: str = "sum") -
         agg_column: Column to aggregate
         agg_func: Aggregation function (sum, mean, count, min, max)
     """
-    logger.info(
-        f"Tool: group_and_aggregate(group_by='{group_by}', agg_column='{agg_column}', agg_func='{agg_func}')"
-    )
+    logger.info(f"Tool: group_and_aggregate(group_by='{group_by}', agg_column='{agg_column}', agg_func='{agg_func}')")
     global _current_df
     df = get_dataframe()
     if df is None:
@@ -270,9 +258,7 @@ def group_and_aggregate(group_by: str, agg_column: str, agg_func: str = "sum") -
     result = df.groupby(group_by)[agg_column].agg(agg_func).reset_index()
     _current_df = result
     logger.info(f"Grouped: {len(df)} rows → {len(result)} groups")
-    return (
-        f"Grouped by '{group_by}', {agg_func} of '{agg_column}':\n{result.to_string()}"
-    )
+    return f"Grouped by '{group_by}', {agg_func} of '{agg_column}':\n{result.to_string()}"
 
 
 @tool
@@ -313,9 +299,7 @@ def reset_data() -> str:
         return "No original data to reset to."
 
     _current_df = _original_df.copy()
-    logger.info(
-        f"Reset to original: {_current_df.shape[0]} rows, {_current_df.shape[1]} columns"
-    )
+    logger.info(f"Reset to original: {_current_df.shape[0]} rows, {_current_df.shape[1]} columns")
     return f"Reset to original dataset: {_current_df.shape[0]} rows, {_current_df.shape[1]} columns"
 
 
@@ -354,9 +338,7 @@ def filter_comparison(column: str, operator: str, value: str) -> str:
         operator: Comparison operator: '>', '<', '>=', '<=', '!=', '=='
         value: Value to compare against (will be converted to number if possible)
     """
-    logger.info(
-        f"Tool: filter_comparison(column='{column}', operator='{operator}', value='{value}')"
-    )
+    logger.info(f"Tool: filter_comparison(column='{column}', operator='{operator}', value='{value}')")
     global _current_df
     df = get_dataframe()
     if df is None:
@@ -394,9 +376,7 @@ def filter_comparison(column: str, operator: str, value: str) -> str:
 
     _current_df = df[mask]
     logger.info(f"Comparison filter: {len(df)} → {len(_current_df)} rows")
-    return (
-        f"Filtered to {len(_current_df)} rows where {column} {operator} {compare_value}"
-    )
+    return f"Filtered to {len(_current_df)} rows where {column} {operator} {compare_value}"
 
 
 @tool
@@ -409,9 +389,7 @@ def filter_numeric_range(column: str, min_value: float, max_value: float) -> str
         min_value: Minimum value (inclusive)
         max_value: Maximum value (inclusive)
     """
-    logger.info(
-        f"Tool: filter_numeric_range(column='{column}', min={min_value}, max={max_value})"
-    )
+    logger.info(f"Tool: filter_numeric_range(column='{column}', min={min_value}, max={max_value})")
     global _current_df
     df = get_dataframe()
     if df is None:
@@ -504,9 +482,7 @@ def drop_nulls(column: str = "") -> str:
 
     dropped = len(df) - len(_current_df)
     logger.info(f"Dropped {dropped} null rows: {len(df)} → {len(_current_df)}")
-    return (
-        f"Dropped {dropped} rows with null values. {len(_current_df)} rows remaining."
-    )
+    return f"Dropped {dropped} rows with null values. {len(_current_df)} rows remaining."
 
 
 @tool
@@ -519,9 +495,7 @@ def get_top_n(n: int, sort_column: str, ascending: bool = False) -> str:
         sort_column: Column to sort by
         ascending: False for top (highest), True for bottom (lowest)
     """
-    logger.info(
-        f"Tool: get_top_n(n={n}, sort_column='{sort_column}', ascending={ascending})"
-    )
+    logger.info(f"Tool: get_top_n(n={n}, sort_column='{sort_column}', ascending={ascending})")
     global _current_df
     df = get_dataframe()
     if df is None:
@@ -529,9 +503,7 @@ def get_top_n(n: int, sort_column: str, ascending: bool = False) -> str:
     if sort_column not in df.columns:
         return f"Column '{sort_column}' not found. Available: {list(df.columns)}"
 
-    _current_df = (
-        df.nlargest(n, sort_column) if not ascending else df.nsmallest(n, sort_column)
-    )
+    _current_df = df.nlargest(n, sort_column) if not ascending else df.nsmallest(n, sort_column)
     direction = "bottom" if ascending else "top"
     logger.info(f"Got {direction} {n} by '{sort_column}'")
     return f"{direction.capitalize()} {n} rows by {sort_column}:\n{_current_df.to_string()}"

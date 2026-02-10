@@ -119,9 +119,7 @@ def create_agent():
 
     # Create ReAct agent with prebuilt graph
     memory = MemorySaver()
-    return create_react_agent(
-        model=llm, tools=all_tools, prompt=SYSTEM_PROMPT, checkpointer=memory
-    )
+    return create_react_agent(model=llm, tools=all_tools, prompt=SYSTEM_PROMPT, checkpointer=memory)
 
 
 # Global agent instance

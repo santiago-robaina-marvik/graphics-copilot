@@ -104,10 +104,7 @@ def compose_layout(layout_type: str, chart_paths: list[Path]) -> Image.Image:
     slots = _calculate_slots(layout_type)
 
     if len(chart_paths) != len(slots):
-        raise ValueError(
-            f"Layout '{layout_type}' requires {len(slots)} charts, "
-            f"got {len(chart_paths)}"
-        )
+        raise ValueError(f"Layout '{layout_type}' requires {len(slots)} charts, got {len(chart_paths)}")
 
     # Create transparent canvas
     canvas = Image.new("RGBA", (CANVAS_WIDTH, CANVAS_HEIGHT), (0, 0, 0, 0))

@@ -59,9 +59,7 @@ def fetch_public_sheet(sheet_id: str, gid: str = "0") -> list[dict]:
     Raises:
         SheetFetchError: If the sheet cannot be fetched or parsed
     """
-    url = (
-        f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
-    )
+    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
     logger.info(f"Fetching sheet: {sheet_id}, gid: {gid}")
 
     try:

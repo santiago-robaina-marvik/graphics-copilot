@@ -347,7 +347,7 @@ After structure approval:
 
 **Always separate success criteria into two categories:**
 
-1. **Automated Verification** (can be run by execution agents):
+1. **Automated Verification** (can be run by execution agents, ideally after every phase of the plan):
 
    - Commands that can be run: `make test`, `npm run lint`, etc.
    - Specific files that should exist

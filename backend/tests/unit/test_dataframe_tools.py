@@ -149,36 +149,28 @@ class TestFilterComparison:
     def test_filter_greater_than(self, sample_dataframe):
         """filter_comparison with > should filter correctly."""
         set_dataframe(sample_dataframe.to_dict(orient="records"))
-        filter_comparison.invoke(
-            {"column": "Revenue", "operator": ">", "value": "2000"}
-        )
+        filter_comparison.invoke({"column": "Revenue", "operator": ">", "value": "2000"})
         df = get_dataframe()
         assert all(df["Revenue"] > 2000)
 
     def test_filter_less_than(self, sample_dataframe):
         """filter_comparison with < should filter correctly."""
         set_dataframe(sample_dataframe.to_dict(orient="records"))
-        filter_comparison.invoke(
-            {"column": "Revenue", "operator": "<", "value": "2000"}
-        )
+        filter_comparison.invoke({"column": "Revenue", "operator": "<", "value": "2000"})
         df = get_dataframe()
         assert all(df["Revenue"] < 2000)
 
     def test_filter_greater_equal(self, sample_dataframe):
         """filter_comparison with >= should include boundary."""
         set_dataframe(sample_dataframe.to_dict(orient="records"))
-        filter_comparison.invoke(
-            {"column": "Revenue", "operator": ">=", "value": "2000"}
-        )
+        filter_comparison.invoke({"column": "Revenue", "operator": ">=", "value": "2000"})
         df = get_dataframe()
         assert 2000 in df["Revenue"].values
 
     def test_filter_invalid_operator(self, sample_dataframe):
         """filter_comparison should reject invalid operator."""
         set_dataframe(sample_dataframe.to_dict(orient="records"))
-        result = filter_comparison.invoke(
-            {"column": "Revenue", "operator": "~", "value": "2000"}
-        )
+        result = filter_comparison.invoke({"column": "Revenue", "operator": "~", "value": "2000"})
         assert "invalid" in result.lower() or "valid" in result.lower()
 
 
@@ -201,9 +193,7 @@ class TestFilterDateRange:
     def test_filter_date_range_month_end(self, sample_dataframe):
         """filter_date_range should handle month-only end dates."""
         set_dataframe(sample_dataframe.to_dict(orient="records"))
-        filter_date_range.invoke(
-            {"date_column": "Date", "start_date": "2024-01-01", "end_date": "2024-01"}
-        )
+        filter_date_range.invoke({"date_column": "Date", "start_date": "2024-01-01", "end_date": "2024-01"})
         df = get_dataframe()
         assert len(df) == 5  # All January dates
 
@@ -214,9 +204,7 @@ class TestFilterNumericRange:
     def test_filter_numeric_range_inclusive(self, sample_dataframe):
         """filter_numeric_range should be inclusive on both ends."""
         set_dataframe(sample_dataframe.to_dict(orient="records"))
-        filter_numeric_range.invoke(
-            {"column": "Revenue", "min_value": 1500, "max_value": 2500}
-        )
+        filter_numeric_range.invoke({"column": "Revenue", "min_value": 1500, "max_value": 2500})
         df = get_dataframe()
         assert 1500 in df["Revenue"].values
         assert 2500 in df["Revenue"].values
@@ -269,9 +257,7 @@ class TestGroupAndAggregate:
     def test_group_sum(self, sample_dataframe):
         """group_and_aggregate with sum should aggregate correctly."""
         set_dataframe(sample_dataframe.to_dict(orient="records"))
-        group_and_aggregate.invoke(
-            {"group_by": "Category", "agg_column": "Revenue", "agg_func": "sum"}
-        )
+        group_and_aggregate.invoke({"group_by": "Category", "agg_column": "Revenue", "agg_func": "sum"})
         df = get_dataframe()
         electronics_row = df[df["Category"] == "Electronics"]
         assert electronics_row["Revenue"].values[0] == 2500  # 1000 + 1500
@@ -279,18 +265,14 @@ class TestGroupAndAggregate:
     def test_group_mean(self, sample_dataframe):
         """group_and_aggregate with mean should calculate average."""
         set_dataframe(sample_dataframe.to_dict(orient="records"))
-        group_and_aggregate.invoke(
-            {"group_by": "Category", "agg_column": "Revenue", "agg_func": "mean"}
-        )
+        group_and_aggregate.invoke({"group_by": "Category", "agg_column": "Revenue", "agg_func": "mean"})
         df = get_dataframe()
         assert len(df) == 3  # 3 categories
 
     def test_group_invalid_func(self, sample_dataframe):
         """group_and_aggregate should reject invalid function."""
         set_dataframe(sample_dataframe.to_dict(orient="records"))
-        result = group_and_aggregate.invoke(
-            {"group_by": "Category", "agg_column": "Revenue", "agg_func": "invalid"}
-        )
+        result = group_and_aggregate.invoke({"group_by": "Category", "agg_column": "Revenue", "agg_func": "invalid"})
         assert "invalid" in result.lower() or "valid" in result.lower()
 
 

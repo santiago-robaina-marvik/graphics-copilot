@@ -74,9 +74,7 @@ def reset_dataframe_state():
 def mock_agent():
     """Create a mock agent for API testing."""
     mock = MagicMock()
-    mock.invoke.return_value = {
-        "messages": [MagicMock(content="Here is your chart analysis.")]
-    }
+    mock.invoke.return_value = {"messages": [MagicMock(content="Here is your chart analysis.")]}
     return mock
 
 

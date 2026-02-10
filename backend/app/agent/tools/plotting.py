@@ -102,9 +102,7 @@ def create_bar_chart(x_column: str, y_column: str, title: str = "Bar Chart") -> 
         y_column: Column for y-axis (values)
         title: Chart title
     """
-    logger.info(
-        f"Tool: create_bar_chart(x='{x_column}', y='{y_column}', title='{title}')"
-    )
+    logger.info(f"Tool: create_bar_chart(x='{x_column}', y='{y_column}', title='{title}')")
     df = get_dataframe()
     if df is None:
         logger.warning("No data loaded for bar chart")
@@ -159,9 +157,7 @@ def create_line_chart(x_column: str, y_column: str, title: str = "Line Chart") -
         y_column: Column for y-axis (values)
         title: Chart title
     """
-    logger.info(
-        f"Tool: create_line_chart(x='{x_column}', y='{y_column}', title='{title}')"
-    )
+    logger.info(f"Tool: create_line_chart(x='{x_column}', y='{y_column}', title='{title}')")
     df = get_dataframe()
     if df is None:
         logger.warning("No data loaded for line chart")
@@ -209,9 +205,7 @@ def create_line_chart(x_column: str, y_column: str, title: str = "Line Chart") -
 
 
 @tool
-def create_distribution_chart(
-    labels_column: str, values_column: str, title: str = "Distribution Chart"
-) -> str:
+def create_distribution_chart(labels_column: str, values_column: str, title: str = "Distribution Chart") -> str:
     """
     Create a horizontal bar chart showing distribution/proportions.
     Shows percentages for each category. Good for comparing parts of a whole.
@@ -221,9 +215,7 @@ def create_distribution_chart(
         values_column: Column for values
         title: Chart title
     """
-    logger.info(
-        f"Tool: create_distribution_chart(labels='{labels_column}', values='{values_column}', title='{title}')"
-    )
+    logger.info(f"Tool: create_distribution_chart(labels='{labels_column}', values='{values_column}', title='{title}')")
     df = get_dataframe()
     if df is None:
         logger.warning("No data loaded for distribution chart")
@@ -257,9 +249,7 @@ def create_distribution_chart(
     )
 
     # Add percentage labels
-    for i, (value, pct) in enumerate(
-        zip(plot_df[values_column], plot_df["_percentage"])
-    ):
+    for i, (value, pct) in enumerate(zip(plot_df[values_column], plot_df["_percentage"])):
         ax.text(value + total * 0.01, i, f"{pct}%", va="center", color=theme.text_color)
 
     ax.set_xlabel(values_column)
@@ -291,9 +281,7 @@ def create_area_chart(x_column: str, y_column: str, title: str = "Area Chart") -
         y_column: Column for y-axis (values)
         title: Chart title
     """
-    logger.info(
-        f"Tool: create_area_chart(x='{x_column}', y='{y_column}', title='{title}')"
-    )
+    logger.info(f"Tool: create_area_chart(x='{x_column}', y='{y_column}', title='{title}')")
     df = get_dataframe()
     if df is None:
         logger.warning("No data loaded for area chart")

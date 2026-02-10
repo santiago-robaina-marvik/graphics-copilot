@@ -235,9 +235,7 @@ class TestRegenerateEndpoint:
         assert response.status_code == 400
         assert "Unknown chart type" in response.json()["detail"]
 
-    def test_regenerate_invalid_column_returns_400(
-        self, client, setup_dataframe, tmp_path
-    ):
+    def test_regenerate_invalid_column_returns_400(self, client, setup_dataframe, tmp_path):
         """Should return 400 for non-existent column."""
         with (
             patch("app.agent.tools.plotting.get_settings") as mock_plotting_settings,
@@ -278,9 +276,7 @@ class TestRegenerateEndpoint:
 class TestRegenerateWithFreshData:
     """Tests for regeneration with fresh Google Sheets data."""
 
-    def test_regenerate_fetches_fresh_data_when_sheet_id_provided(
-        self, client, tmp_path
-    ):
+    def test_regenerate_fetches_fresh_data_when_sheet_id_provided(self, client, tmp_path):
         """Should fetch fresh data from Google Sheets when sheet_id is provided."""
         fresh_data = [
             {"category": "X", "value": 100},
@@ -312,9 +308,7 @@ class TestRegenerateWithFreshData:
             # Verify the chart was created with fresh data (2 rows)
             assert response.json()["chart_metadata"]["row_count"] == 2
 
-    def test_regenerate_uses_cached_data_when_no_sheet_id(
-        self, client, setup_dataframe, tmp_path
-    ):
+    def test_regenerate_uses_cached_data_when_no_sheet_id(self, client, setup_dataframe, tmp_path):
         """Should use cached data when no sheet_id is provided."""
         with (
             patch("app.agent.tools.plotting.get_settings") as mock_plotting_settings,

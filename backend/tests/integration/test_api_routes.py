@@ -31,14 +31,10 @@ class TestChatEndpoint:
     def test_chat_minimal_request(self, mock_get_agent, client):
         """Chat should handle minimal request."""
         mock_agent = MagicMock()
-        mock_agent.invoke.return_value = {
-            "messages": [MagicMock(content="Hello! How can I help?")]
-        }
+        mock_agent.invoke.return_value = {"messages": [MagicMock(content="Hello! How can I help?")]}
         mock_get_agent.return_value = mock_agent
 
-        response = client.post(
-            "/api/chat", json={"message": "Hello", "session_id": "test-session-123"}
-        )
+        response = client.post("/api/chat", json={"message": "Hello", "session_id": "test-session-123"})
 
         assert response.status_code == 200
         data = response.json()
@@ -50,9 +46,7 @@ class TestChatEndpoint:
     def test_chat_with_data(self, mock_set_df, mock_get_agent, client):
         """Chat should inject data when provided."""
         mock_agent = MagicMock()
-        mock_agent.invoke.return_value = {
-            "messages": [MagicMock(content="I see your data.")]
-        }
+        mock_agent.invoke.return_value = {"messages": [MagicMock(content="I see your data.")]}
         mock_get_agent.return_value = mock_agent
 
         response = client.post(
@@ -97,9 +91,7 @@ class TestChatEndpoint:
         mock_agent.invoke.return_value = {"messages": [mock_message]}
         mock_get_agent.return_value = mock_agent
 
-        response = client.post(
-            "/api/chat", json={"message": "Hello", "session_id": "test-123"}
-        )
+        response = client.post("/api/chat", json={"message": "Hello", "session_id": "test-123"})
 
         assert response.status_code == 200
         data = response.json()
@@ -113,9 +105,7 @@ class TestChatEndpoint:
         mock_agent.invoke.side_effect = Exception("LLM API error")
         mock_get_agent.return_value = mock_agent
 
-        response = client.post(
-            "/api/chat", json={"message": "Hello", "session_id": "test-123"}
-        )
+        response = client.post("/api/chat", json={"message": "Hello", "session_id": "test-123"})
 
         assert response.status_code == 500
         assert "LLM API error" in response.json()["detail"]
