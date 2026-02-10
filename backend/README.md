@@ -4,27 +4,21 @@ Python backend with Gemini-powered LangGraph agent for data visualization.
 
 ## Setup
 
-1. Create virtual environment:
+1. Install dependencies (Poetry creates virtualenv automatically):
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+poetry install
 ```
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-3. Configure environment:
+2. Configure environment:
 ```bash
 cp .env.example .env
 # Edit .env and add your GEMINI_API_KEY
 ```
 
-4. Run the server:
+3. Run the server:
 ```bash
-uvicorn app.main:app --reload --port 8000
+poetry run uvicorn app.main:app --reload --port 8000
 ```
 
 ## API Endpoints

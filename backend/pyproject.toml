@@ -1,0 +1,76 @@
+[tool.poetry]
+name = "slides-ai-backend"
+version = "0.1.0"
+description = "Backend for Slides AI Assistant - AI-powered chart generation"
+authors = []
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+# Web framework
+fastapi = ">=0.109.0"
+uvicorn = {version = ">=0.27.0", extras = ["standard"]}
+python-multipart = ">=0.0.6"
+
+# LangGraph and LangChain
+langgraph = ">=0.2.50"
+langchain = ">=0.3.0"
+langchain-google-genai = ">=2.0.0"
+
+# Data manipulation
+pandas = ">=2.2.0"
+numpy = ">=1.26.0"
+
+# Visualization
+matplotlib = ">=3.8.0"
+seaborn = ">=0.13.0"
+Pillow = ">=10.0.0"
+
+# Utilities
+python-dotenv = ">=1.0.0"
+pydantic = ">=2.5.0"
+pydantic-settings = ">=2.1.0"
+
+[tool.poetry.group.dev.dependencies]
+# Testing
+pytest = ">=8.0.0"
+pytest-cov = ">=4.1.0"
+pytest-asyncio = ">=0.23.0"
+pytest-mock = ">=3.12.0"
+httpx = ">=0.26.0"
+respx = ">=0.20.0"
+
+# Code quality
+ruff = ">=0.1.0"
+mypy = ">=1.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+asyncio_mode = "auto"
+addopts = "-v --tb=short --cov=app --cov-report=term-missing"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = ["E501"]  # Ignore line too long - pre-existing violations
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true

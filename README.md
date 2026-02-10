@@ -17,7 +17,8 @@ An AI-powered presentation assistant that helps you create charts and visualizat
 ### Prerequisites
 
 - **Node.js** 16+ and npm
-- **Python** 3.9+
+- **Python** 3.11+
+- **Poetry** (install: `curl -sSL https://install.python-poetry.org | python3 -`)
 - **Google Gemini API Key** (get one at https://aistudio.google.com/app/apikey)
 
 ### 1. Frontend Setup
@@ -43,20 +44,15 @@ VITE_GOOGLE_CLIENT_ID=your_client_id   # For Google Slides OAuth (optional)
 # Navigate to backend directory
 cd backend
 
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-pip install -r requirements-dev.txt  # For testing
+# Install dependencies (Poetry creates virtualenv automatically)
+poetry install
 
 # Create environment file and add your Gemini API key
 cp .env.example .env
 # Edit .env and add: GEMINI_API_KEY=your_key_here
 
 # Start backend server
-uvicorn app.main:app --reload --port 8000
+poetry run uvicorn app.main:app --reload --port 8000
 ```
 
 The backend API will be available at **http://localhost:8000**
@@ -74,8 +70,7 @@ You need **both** servers running:
 
    ```bash
    cd backend
-   source venv/bin/activate
-   uvicorn app.main:app --reload --port 8000
+   poetry run uvicorn app.main:app --reload --port 8000
    ```
 3. Open **http://localhost:5173** in your browser
 
@@ -107,19 +102,18 @@ npm run test:coverage     # Generate coverage report
 
 ```bash
 cd backend
-source venv/bin/activate
-pytest                                        # Run all tests
-pytest --cov=app --cov-report=term-missing   # With coverage
-pytest tests/unit/test_schemas.py            # Run specific file
-pytest -k "test_function_name"               # Run tests matching pattern
+poetry run pytest                                        # Run all tests
+poetry run pytest --cov=app --cov-report=term-missing   # With coverage
+poetry run pytest tests/unit/test_schemas.py            # Run specific file
+poetry run pytest -k "test_function_name"               # Run tests matching pattern
 ```
 
 **Linting:**
 
 ```bash
 cd backend
-ruff check .           # Check code
-ruff check --fix .     # Auto-fix issues
+poetry run ruff check .           # Check code
+poetry run ruff check --fix .     # Auto-fix issues
 ```
 
 ### Building for Production
