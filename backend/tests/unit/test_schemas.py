@@ -91,8 +91,9 @@ class TestRegenerateRequest:
 
     def test_minimal_request(self):
         """Should accept minimal valid request."""
-        req = RegenerateRequest(chart_type="bar")
+        req = RegenerateRequest(chart_type="bar", session_id="sess1")
         assert req.chart_type == "bar"
+        assert req.session_id == "sess1"
         assert req.sheet_id is None
         assert req.sheet_gid == "0"
 
@@ -100,6 +101,7 @@ class TestRegenerateRequest:
         """Should accept sheet_id and sheet_gid."""
         req = RegenerateRequest(
             chart_type="bar",
+            session_id="sess1",
             x_column="category",
             y_column="value",
             sheet_id="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
@@ -112,6 +114,7 @@ class TestRegenerateRequest:
         """Should default sheet_gid to '0' when only sheet_id provided."""
         req = RegenerateRequest(
             chart_type="bar",
+            session_id="sess1",
             sheet_id="some_sheet_id",
         )
         assert req.sheet_gid == "0"
@@ -119,4 +122,9 @@ class TestRegenerateRequest:
     def test_invalid_theme_raises(self):
         """Should reject invalid theme values."""
         with pytest.raises(ValidationError):
-            RegenerateRequest(chart_type="bar", theme="invalid_theme")
+            RegenerateRequest(chart_type="bar", session_id="sess1", theme="invalid_theme")
+
+    def test_missing_session_id_raises(self):
+        """Should reject request without session_id."""
+        with pytest.raises(ValidationError):
+            RegenerateRequest(chart_type="bar")

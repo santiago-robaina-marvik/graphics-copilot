@@ -21,6 +21,7 @@ class ChatResponse(BaseModel):
 
 class RegenerateRequest(BaseModel):
     chart_type: str
+    session_id: str
     x_column: Optional[str] = None
     y_column: Optional[str] = None
     labels_column: Optional[str] = None

@@ -67,8 +67,8 @@ class TestChatWithFreshData:
             )
 
             assert response.status_code == 200
-            # Should have called set_dataframe with fallback data
-            mock_set_df.assert_called_with(fallback_data)
+            # Should have called set_dataframe with session_id and fallback data
+            mock_set_df.assert_called_with("test-session", fallback_data)
 
     def test_chat_uses_provided_data_when_no_sheet_id(self, client):
         """Should use provided data when no sheet_id is given."""
@@ -95,4 +95,4 @@ class TestChatWithFreshData:
 
             assert response.status_code == 200
             mock_fetch.assert_not_called()
-            mock_set_df.assert_called_with(provided_data)
+            mock_set_df.assert_called_with("test-session", provided_data)

@@ -7,6 +7,8 @@ import pytest
 from app.agent.tools.dataframe import set_dataframe
 from app.services.sheets import SheetFetchError
 
+SID = "test-session"
+
 
 @pytest.fixture
 def sample_data():
@@ -21,9 +23,9 @@ def sample_data():
 @pytest.fixture
 def setup_dataframe(sample_data):
     """Set up dataframe before each test."""
-    set_dataframe(sample_data)
+    set_dataframe(SID, sample_data)
     yield
-    set_dataframe(None)
+    set_dataframe(SID, None)
 
 
 class TestRegenerateEndpoint:
@@ -42,6 +44,7 @@ class TestRegenerateEndpoint:
                 "/api/regenerate",
                 json={
                     "chart_type": "bar",
+                    "session_id": SID,
                     "x_column": "category",
                     "y_column": "value",
                     "title": "Regenerated Bar Chart",
@@ -72,6 +75,7 @@ class TestRegenerateEndpoint:
                 "/api/regenerate",
                 json={
                     "chart_type": "bar",
+                    "session_id": SID,
                     "x_column": "category",
                     "y_column": "value",
                     "title": "Chart 1",
@@ -85,6 +89,7 @@ class TestRegenerateEndpoint:
                 "/api/regenerate",
                 json={
                     "chart_type": "bar",
+                    "session_id": SID,
                     "x_column": "category",
                     "y_column": "sales",
                     "title": "Chart 2",
@@ -112,6 +117,7 @@ class TestRegenerateEndpoint:
                 "/api/regenerate",
                 json={
                     "chart_type": "bar",
+                    "session_id": SID,
                     "x_column": "category",
                     "y_column": "value",
                     "title": "Custom Title Here",
@@ -134,6 +140,7 @@ class TestRegenerateEndpoint:
                 "/api/regenerate",
                 json={
                     "chart_type": "bar",
+                    "session_id": SID,
                     "x_column": "category",
                     "y_column": "value",
                     "theme": "meli_dark",
@@ -144,6 +151,7 @@ class TestRegenerateEndpoint:
                 "/api/regenerate",
                 json={
                     "chart_type": "bar",
+                    "session_id": SID,
                     "x_column": "category",
                     "y_column": "value",
                     "theme": "meli_light",
@@ -168,6 +176,7 @@ class TestRegenerateEndpoint:
                 "/api/regenerate",
                 json={
                     "chart_type": "line",
+                    "session_id": SID,
                     "x_column": "category",
                     "y_column": "value",
                 },
@@ -189,6 +198,7 @@ class TestRegenerateEndpoint:
                 "/api/regenerate",
                 json={
                     "chart_type": "distribution",
+                    "session_id": SID,
                     "labels_column": "category",
                     "values_column": "value",
                 },
@@ -213,6 +223,7 @@ class TestRegenerateEndpoint:
                 "/api/regenerate",
                 json={
                     "chart_type": "area",
+                    "session_id": SID,
                     "x_column": "category",
                     "y_column": "value",
                 },
@@ -227,6 +238,7 @@ class TestRegenerateEndpoint:
             "/api/regenerate",
             json={
                 "chart_type": "unknown_type",
+                "session_id": SID,
                 "x_column": "category",
                 "y_column": "value",
             },
@@ -248,6 +260,7 @@ class TestRegenerateEndpoint:
                 "/api/regenerate",
                 json={
                     "chart_type": "bar",
+                    "session_id": SID,
                     "x_column": "nonexistent_column",
                     "y_column": "value",
                 },
@@ -258,12 +271,13 @@ class TestRegenerateEndpoint:
 
     def test_regenerate_no_data_returns_400(self, client):
         """Should return 400 when no data is loaded."""
-        set_dataframe(None)
+        set_dataframe(SID, None)
 
         response = client.post(
             "/api/regenerate",
             json={
                 "chart_type": "bar",
+                "session_id": SID,
                 "x_column": "category",
                 "y_column": "value",
             },
@@ -296,6 +310,7 @@ class TestRegenerateWithFreshData:
                 "/api/regenerate",
                 json={
                     "chart_type": "bar",
+                    "session_id": SID,
                     "x_column": "category",
                     "y_column": "value",
                     "sheet_id": "test_sheet_123",
@@ -322,6 +337,7 @@ class TestRegenerateWithFreshData:
                 "/api/regenerate",
                 json={
                     "chart_type": "bar",
+                    "session_id": SID,
                     "x_column": "category",
                     "y_column": "value",
                     # No sheet_id - should use cached data
@@ -342,6 +358,7 @@ class TestRegenerateWithFreshData:
                 "/api/regenerate",
                 json={
                     "chart_type": "bar",
+                    "session_id": SID,
                     "x_column": "category",
                     "y_column": "value",
                     "sheet_id": "invalid_sheet",

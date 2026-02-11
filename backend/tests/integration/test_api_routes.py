@@ -49,7 +49,7 @@ class TestChatEndpoint:
         )
 
         assert response.status_code == 200
-        mock_set_df.assert_called_once_with([{"col1": "a", "col2": 1}])
+        mock_set_df.assert_called_once_with("test-123", [{"col1": "a", "col2": 1}])
 
     @patch("app.api.routes.get_agent")
     def test_chat_extracts_chart_url(self, mock_get_agent, client):

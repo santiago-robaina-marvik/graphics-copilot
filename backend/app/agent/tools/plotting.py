@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 from datetime import datetime
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 
 from app.agent.tools.dataframe import get_dataframe, get_data_source
@@ -27,10 +28,10 @@ CHART_DPI = _image_config["dpi"]
 CHART_FIGSIZE = (CHART_WIDTH_PX / CHART_DPI, CHART_HEIGHT_PX / CHART_DPI)
 
 
-def _save_chart(metadata: dict) -> tuple[str, dict]:
+def _save_chart(session_id: str, metadata: dict) -> tuple[str, dict]:
     """Save current matplotlib figure and metadata, return the URL path and metadata."""
     settings = get_settings()
-    theme = get_theme()
+    theme = get_theme(session_id)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     filename = f"chart_{timestamp}.png"
     filepath = Path(settings.charts_dir) / filename
@@ -63,9 +64,9 @@ def _save_chart(metadata: dict) -> tuple[str, dict]:
     return chart_url, full_metadata
 
 
-def _apply_theme():
+def _apply_theme(session_id: str):
     """Apply the current chart theme to matplotlib and seaborn."""
-    theme = get_theme()
+    theme = get_theme(session_id)
 
     # Use dark_background as base for dark themes, default for light
     if theme.figure_facecolor in ("#0B0C20", "#1a1a24"):
@@ -93,7 +94,7 @@ def _apply_theme():
 
 
 @tool
-def create_bar_chart(x_column: str, y_column: str, title: str = "Bar Chart") -> str:
+def create_bar_chart(x_column: str, y_column: str, config: RunnableConfig, title: str = "Bar Chart") -> str:
     """
     Create a bar chart from the current dataset.
 
@@ -103,7 +104,8 @@ def create_bar_chart(x_column: str, y_column: str, title: str = "Bar Chart") -> 
         title: Chart title
     """
     logger.info(f"Tool: create_bar_chart(x='{x_column}', y='{y_column}', title='{title}')")
-    df = get_dataframe()
+    session_id = config["configurable"]["thread_id"]
+    df = get_dataframe(session_id)
     if df is None:
         logger.warning("No data loaded for bar chart")
         return "No data loaded. Cannot create chart."
@@ -112,8 +114,8 @@ def create_bar_chart(x_column: str, y_column: str, title: str = "Bar Chart") -> 
         logger.warning("Column not found for bar chart")
         return f"Column not found. Available: {list(df.columns)}"
 
-    _apply_theme()
-    theme = get_theme()
+    _apply_theme(session_id)
+    theme = get_theme(session_id)
     fig, ax = plt.subplots()
 
     # Use seaborn barplot
@@ -132,7 +134,7 @@ def create_bar_chart(x_column: str, y_column: str, title: str = "Bar Chart") -> 
     ax.set_title(title, color=theme.text_color, fontsize=14)
     plt.xticks(rotation=45, ha="right")
 
-    data_source = get_data_source()
+    data_source = get_data_source(session_id)
     metadata = {
         "chart_type": "bar",
         "x_column": x_column,
@@ -142,13 +144,13 @@ def create_bar_chart(x_column: str, y_column: str, title: str = "Bar Chart") -> 
     }
     if data_source:
         metadata["data_source"] = data_source
-    chart_url, _ = _save_chart(metadata)
+    chart_url, _ = _save_chart(session_id, metadata)
     logger.info(f"Bar chart created with {len(df)} bars")
     return f"Bar chart created: {chart_url}"
 
 
 @tool
-def create_line_chart(x_column: str, y_column: str, title: str = "Line Chart") -> str:
+def create_line_chart(x_column: str, y_column: str, config: RunnableConfig, title: str = "Line Chart") -> str:
     """
     Create a line chart from the current dataset. Good for trends over time.
 
@@ -158,7 +160,8 @@ def create_line_chart(x_column: str, y_column: str, title: str = "Line Chart") -
         title: Chart title
     """
     logger.info(f"Tool: create_line_chart(x='{x_column}', y='{y_column}', title='{title}')")
-    df = get_dataframe()
+    session_id = config["configurable"]["thread_id"]
+    df = get_dataframe(session_id)
     if df is None:
         logger.warning("No data loaded for line chart")
         return "No data loaded. Cannot create chart."
@@ -167,8 +170,8 @@ def create_line_chart(x_column: str, y_column: str, title: str = "Line Chart") -
         logger.warning("Column not found for line chart")
         return f"Column not found. Available: {list(df.columns)}"
 
-    _apply_theme()
-    theme = get_theme()
+    _apply_theme(session_id)
+    theme = get_theme(session_id)
     fig, ax = plt.subplots()
 
     # Use seaborn lineplot with markers
@@ -189,7 +192,7 @@ def create_line_chart(x_column: str, y_column: str, title: str = "Line Chart") -
     plt.xticks(rotation=45, ha="right")
     ax.grid(True, alpha=0.3)
 
-    data_source = get_data_source()
+    data_source = get_data_source(session_id)
     metadata = {
         "chart_type": "line",
         "x_column": x_column,
@@ -199,13 +202,15 @@ def create_line_chart(x_column: str, y_column: str, title: str = "Line Chart") -
     }
     if data_source:
         metadata["data_source"] = data_source
-    chart_url, _ = _save_chart(metadata)
+    chart_url, _ = _save_chart(session_id, metadata)
     logger.info(f"Line chart created with {len(df)} points")
     return f"Line chart created: {chart_url}"
 
 
 @tool
-def create_distribution_chart(labels_column: str, values_column: str, title: str = "Distribution Chart") -> str:
+def create_distribution_chart(
+    labels_column: str, values_column: str, config: RunnableConfig, title: str = "Distribution Chart"
+) -> str:
     """
     Create a horizontal bar chart showing distribution/proportions.
     Shows percentages for each category. Good for comparing parts of a whole.
@@ -216,7 +221,8 @@ def create_distribution_chart(labels_column: str, values_column: str, title: str
         title: Chart title
     """
     logger.info(f"Tool: create_distribution_chart(labels='{labels_column}', values='{values_column}', title='{title}')")
-    df = get_dataframe()
+    session_id = config["configurable"]["thread_id"]
+    df = get_dataframe(session_id)
     if df is None:
         logger.warning("No data loaded for distribution chart")
         return "No data loaded. Cannot create chart."
@@ -233,8 +239,8 @@ def create_distribution_chart(labels_column: str, values_column: str, title: str
     plot_df = plot_df.copy()
     plot_df["_percentage"] = (plot_df[values_column] / total * 100).round(1)
 
-    _apply_theme()
-    theme = get_theme()
+    _apply_theme(session_id)
+    theme = get_theme(session_id)
     fig, ax = plt.subplots()
 
     # Use seaborn horizontal barplot for proportions
@@ -256,7 +262,7 @@ def create_distribution_chart(labels_column: str, values_column: str, title: str
     ax.set_ylabel(labels_column)
     ax.set_title(title, color=theme.text_color, fontsize=14)
 
-    data_source = get_data_source()
+    data_source = get_data_source(session_id)
     metadata = {
         "chart_type": "distribution",
         "labels_column": labels_column,
@@ -266,13 +272,13 @@ def create_distribution_chart(labels_column: str, values_column: str, title: str
     }
     if data_source:
         metadata["data_source"] = data_source
-    chart_url, _ = _save_chart(metadata)
+    chart_url, _ = _save_chart(session_id, metadata)
     logger.info(f"Distribution chart created with {len(plot_df)} categories")
     return f"Distribution chart created: {chart_url}"
 
 
 @tool
-def create_area_chart(x_column: str, y_column: str, title: str = "Area Chart") -> str:
+def create_area_chart(x_column: str, y_column: str, config: RunnableConfig, title: str = "Area Chart") -> str:
     """
     Create an area chart (filled line chart). Good for volume/cumulative data.
 
@@ -282,7 +288,8 @@ def create_area_chart(x_column: str, y_column: str, title: str = "Area Chart") -
         title: Chart title
     """
     logger.info(f"Tool: create_area_chart(x='{x_column}', y='{y_column}', title='{title}')")
-    df = get_dataframe()
+    session_id = config["configurable"]["thread_id"]
+    df = get_dataframe(session_id)
     if df is None:
         logger.warning("No data loaded for area chart")
         return "No data loaded. Cannot create chart."
@@ -291,8 +298,8 @@ def create_area_chart(x_column: str, y_column: str, title: str = "Area Chart") -
         logger.warning("Column not found for area chart")
         return f"Column not found. Available: {list(df.columns)}"
 
-    _apply_theme()
-    theme = get_theme()
+    _apply_theme(session_id)
+    theme = get_theme(session_id)
     fig, ax = plt.subplots()
 
     # Use seaborn lineplot and fill
@@ -320,7 +327,7 @@ def create_area_chart(x_column: str, y_column: str, title: str = "Area Chart") -
     ax.set_title(title, color=theme.text_color, fontsize=14)
     ax.grid(True, alpha=0.3)
 
-    data_source = get_data_source()
+    data_source = get_data_source(session_id)
     metadata = {
         "chart_type": "area",
         "x_column": x_column,
@@ -330,7 +337,7 @@ def create_area_chart(x_column: str, y_column: str, title: str = "Area Chart") -
     }
     if data_source:
         metadata["data_source"] = data_source
-    chart_url, _ = _save_chart(metadata)
+    chart_url, _ = _save_chart(session_id, metadata)
     logger.info(f"Area chart created with {len(df)} points")
     return f"Area chart created: {chart_url}"
 

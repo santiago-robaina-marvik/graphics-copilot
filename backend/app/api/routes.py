@@ -21,6 +21,7 @@ from app.models.schemas import (
 )
 from app.agent.graph import get_agent
 from app.agent.tools.dataframe import set_dataframe, set_data_source
+from app.agent.session_state import remove_session
 from app.services.sheets import fetch_public_sheet, SheetFetchError
 from app.agent.tools.plotting import (
     create_bar_chart,
@@ -75,13 +76,14 @@ def chat():
             try:
                 logger.info(f"Fetching fresh data from sheet: {req.sheet_id}")
                 fresh_data = fetch_public_sheet(req.sheet_id, req.sheet_gid or "0")
-                set_dataframe(fresh_data)
+                set_dataframe(req.session_id, fresh_data)
                 set_data_source(
+                    req.session_id,
                     {
                         "type": "google_sheets",
                         "sheet_id": req.sheet_id,
                         "sheet_gid": req.sheet_gid or "0",
-                    }
+                    },
                 )
                 logger.info(f"Loaded {len(fresh_data)} rows from Google Sheet")
             except SheetFetchError as e:
@@ -89,17 +91,17 @@ def chat():
                 # Fall back to provided data if sheet fetch fails
                 if req.data:
                     logger.info(f"Falling back to provided data: {len(req.data)} rows")
-                    set_dataframe(req.data)
-                    set_data_source(None)  # Clear data source since using cached
+                    set_dataframe(req.session_id, req.data)
+                    set_data_source(req.session_id, None)  # Clear data source since using cached
         elif req.data:
             # No sheet source, use provided data
             logger.info(f"Data provided: {len(req.data)} rows")
-            set_dataframe(req.data)
-            set_data_source(None)  # No sheet source
+            set_dataframe(req.session_id, req.data)
+            set_data_source(req.session_id, None)  # No sheet source
 
         # Set the chart theme
         theme_name = req.theme or "meli_dark"
-        set_theme(theme_name)
+        set_theme(req.session_id, theme_name)
         logger.info(f"Chart theme: {theme_name}")
 
         # Get the agent
@@ -167,13 +169,14 @@ def chat():
 
 @bp.post("/reset/<session_id>")
 def reset_session(session_id):
-    """Reset a chat session (clear conversation history)."""
-    # The MemorySaver doesn't have a direct delete method,
-    # but starting a new thread_id effectively creates a new session
+    """Reset a chat session (clear conversation history and state)."""
+    removed = remove_session(session_id)
     return jsonify(
         {
             "status": "ok",
-            "message": f"Session {session_id} will be reset on next message",
+            "message": f"Session {session_id} state cleared"
+            if removed
+            else f"Session {session_id} had no state to clear",
         }
     )
 
@@ -215,20 +218,24 @@ def regenerate_chart():
         try:
             logger.info(f"Fetching fresh data from sheet: {req.sheet_id}")
             fresh_data = fetch_public_sheet(req.sheet_id, req.sheet_gid or "0")
-            set_dataframe(fresh_data)
+            set_dataframe(req.session_id, fresh_data)
             set_data_source(
+                req.session_id,
                 {
                     "type": "google_sheets",
                     "sheet_id": req.sheet_id,
                     "sheet_gid": req.sheet_gid or "0",
-                }
+                },
             )
             logger.info(f"Loaded {len(fresh_data)} rows from Google Sheet")
         except SheetFetchError as e:
             abort(400, description=str(e))
 
     # Set theme
-    set_theme(req.theme or "meli_dark")
+    set_theme(req.session_id, req.theme or "meli_dark")
+
+    # Add config for tool invocation
+    config = {"configurable": {"thread_id": req.session_id}}
 
     # Call appropriate chart function based on type
     chart_functions = {
@@ -237,28 +244,32 @@ def regenerate_chart():
                 "x_column": req.x_column,
                 "y_column": req.y_column,
                 "title": req.title or "Bar Chart",
-            }
+            },
+            config,
         ),
         "line": lambda: create_line_chart.invoke(
             {
                 "x_column": req.x_column,
                 "y_column": req.y_column,
                 "title": req.title or "Line Chart",
-            }
+            },
+            config,
         ),
         "distribution": lambda: create_distribution_chart.invoke(
             {
                 "labels_column": req.labels_column,
                 "values_column": req.values_column,
                 "title": req.title or "Distribution Chart",
-            }
+            },
+            config,
         ),
         "area": lambda: create_area_chart.invoke(
             {
                 "x_column": req.x_column,
                 "y_column": req.y_column,
                 "title": req.title or "Area Chart",
-            }
+            },
+            config,
         ),
     }
 

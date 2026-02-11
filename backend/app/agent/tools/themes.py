@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from app.agent.session_state import get_session
+
 
 @dataclass
 class ChartTheme:
@@ -50,17 +52,14 @@ THEMES: dict[str, ChartTheme] = {
     ),
 }
 
-_current_theme: str = "meli_dark"
 
-
-def set_theme(name: str) -> None:
+def set_theme(session_id: str, name: str) -> None:
     """Set the current chart theme by name."""
-    global _current_theme
     if name not in THEMES:
         raise ValueError(f"Unknown theme: {name}. Available: {list(THEMES.keys())}")
-    _current_theme = name
+    get_session(session_id).theme = name
 
 
-def get_theme() -> ChartTheme:
+def get_theme(session_id: str) -> ChartTheme:
     """Get the current chart theme."""
-    return THEMES[_current_theme]
+    return THEMES[get_session(session_id).theme]

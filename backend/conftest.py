@@ -6,6 +6,8 @@ from unittest.mock import MagicMock, patch
 
 from app.main import app
 
+TEST_SESSION_ID = "test-session"
+
 
 @pytest.fixture
 def client():
@@ -60,14 +62,24 @@ def large_dataframe():
 
 @pytest.fixture(autouse=True)
 def reset_dataframe_state():
-    """Reset module-level DataFrame state before each test."""
-    import app.agent.tools.dataframe as df_module
+    """Reset all session state before each test."""
+    from app.agent.session_state import clear_all_sessions
 
-    df_module._current_df = None
-    df_module._original_df = None
+    clear_all_sessions()
     yield
-    df_module._current_df = None
-    df_module._original_df = None
+    clear_all_sessions()
+
+
+@pytest.fixture
+def test_session_id():
+    """Provide a consistent session ID for tests."""
+    return TEST_SESSION_ID
+
+
+@pytest.fixture
+def test_config():
+    """Provide a RunnableConfig for tool invocation in tests."""
+    return {"configurable": {"thread_id": TEST_SESSION_ID}}
 
 
 @pytest.fixture

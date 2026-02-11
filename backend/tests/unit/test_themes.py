@@ -9,6 +9,8 @@ from app.agent.tools.themes import (
     get_theme,
 )
 
+SID = "test-session"
+
 
 class TestChartTheme:
     """Tests for ChartTheme dataclass."""
@@ -60,16 +62,16 @@ class TestSetTheme:
 
     def test_set_theme_valid(self):
         """set_theme should set valid theme."""
-        set_theme("meli_light")
-        assert get_theme().name == "meli_light"
+        set_theme(SID, "meli_light")
+        assert get_theme(SID).name == "meli_light"
 
-        set_theme("meli_dark")
-        assert get_theme().name == "meli_dark"
+        set_theme(SID, "meli_dark")
+        assert get_theme(SID).name == "meli_dark"
 
     def test_set_theme_invalid(self):
         """set_theme should raise for invalid theme."""
         with pytest.raises(ValueError, match="Unknown theme"):
-            set_theme("invalid_theme")
+            set_theme(SID, "invalid_theme")
 
 
 class TestGetTheme:
@@ -77,7 +79,7 @@ class TestGetTheme:
 
     def test_get_theme_returns_current(self):
         """get_theme should return current theme."""
-        set_theme("meli_yellow")
-        theme = get_theme()
+        set_theme(SID, "meli_yellow")
+        theme = get_theme(SID)
         assert theme.name == "meli_yellow"
         assert isinstance(theme, ChartTheme)

@@ -13,6 +13,9 @@ from app.agent.tools.plotting import (
     create_area_chart,
 )
 
+SID = "test-session"
+CFG = {"configurable": {"thread_id": SID}}
+
 
 @pytest.fixture
 def sample_data():
@@ -27,9 +30,9 @@ def sample_data():
 @pytest.fixture
 def setup_dataframe(sample_data):
     """Set up dataframe before each test."""
-    set_dataframe(sample_data)
+    set_dataframe(SID, sample_data)
     yield
-    set_dataframe(None)
+    set_dataframe(SID, None)
 
 
 class TestChartMetadataSidecar:
@@ -45,7 +48,8 @@ class TestChartMetadataSidecar:
                     "x_column": "category",
                     "y_column": "value",
                     "title": "Test Bar Chart",
-                }
+                },
+                CFG,
             )
 
             # Find created files
@@ -78,7 +82,8 @@ class TestChartMetadataSidecar:
                     "x_column": "category",
                     "y_column": "value",
                     "title": "Test Line Chart",
-                }
+                },
+                CFG,
             )
 
             json_files = list(tmp_path.glob("chart_*.json"))
@@ -101,7 +106,8 @@ class TestChartMetadataSidecar:
                     "labels_column": "category",
                     "values_column": "value",
                     "title": "Test Distribution",
-                }
+                },
+                CFG,
             )
 
             json_files = list(tmp_path.glob("chart_*.json"))
@@ -124,7 +130,8 @@ class TestChartMetadataSidecar:
                     "x_column": "category",
                     "y_column": "value",
                     "title": "Test Area Chart",
-                }
+                },
+                CFG,
             )
 
             json_files = list(tmp_path.glob("chart_*.json"))
@@ -144,7 +151,8 @@ class TestChartMetadataSidecar:
                 {
                     "x_column": "category",
                     "y_column": "value",
-                }
+                },
+                CFG,
             )
 
             png_file = list(tmp_path.glob("chart_*.png"))[0]
@@ -213,11 +221,12 @@ class TestChartMetadataWithDataSource:
     def test_bar_chart_includes_data_source_in_metadata(self, setup_dataframe, tmp_path):
         """Bar chart metadata should include data_source when set."""
         set_data_source(
+            SID,
             {
                 "type": "google_sheets",
                 "sheet_id": "test_sheet_123",
                 "sheet_gid": "42",
-            }
+            },
         )
 
         with patch("app.agent.tools.plotting.get_settings") as mock_settings:
@@ -228,7 +237,8 @@ class TestChartMetadataWithDataSource:
                     "x_column": "category",
                     "y_column": "value",
                     "title": "Test Chart",
-                }
+                },
+                CFG,
             )
 
             json_files = list(tmp_path.glob("chart_*.json"))
@@ -242,12 +252,9 @@ class TestChartMetadataWithDataSource:
             assert metadata["data_source"]["sheet_id"] == "test_sheet_123"
             assert metadata["data_source"]["sheet_gid"] == "42"
 
-        # Cleanup
-        set_data_source(None)
-
     def test_bar_chart_no_data_source_when_not_set(self, setup_dataframe, tmp_path):
         """Bar chart metadata should not include data_source when not set."""
-        set_data_source(None)
+        set_data_source(SID, None)
 
         with patch("app.agent.tools.plotting.get_settings") as mock_settings:
             mock_settings.return_value.charts_dir = str(tmp_path)
@@ -256,7 +263,8 @@ class TestChartMetadataWithDataSource:
                 {
                     "x_column": "category",
                     "y_column": "value",
-                }
+                },
+                CFG,
             )
 
             json_files = list(tmp_path.glob("chart_*.json"))
