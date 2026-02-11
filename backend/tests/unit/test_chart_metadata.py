@@ -207,6 +207,27 @@ class TestReadChartMetadata:
             result = _read_chart_metadata("/static/charts/chart_invalid.png")
             assert result is None
 
+    def test_read_metadata_logs_warning_on_error(self, tmp_path):
+        """Should log a warning when metadata read fails."""
+        from app.api.routes import _read_chart_metadata
+
+        # Create an invalid JSON file to trigger exception
+        json_path = tmp_path / "chart_broken.json"
+        with open(json_path, "w") as f:
+            f.write("not valid json")
+
+        with (
+            patch("app.api.routes.get_settings") as mock_settings,
+            patch("app.api.routes.logger") as mock_logger,
+        ):
+            mock_settings.return_value.charts_dir = str(tmp_path)
+
+            result = _read_chart_metadata("/static/charts/chart_broken.png")
+
+            assert result is None
+            mock_logger.warning.assert_called_once()
+            assert "chart_broken.png" in mock_logger.warning.call_args[0][0]
+
     def test_read_metadata_returns_none_for_none_url(self):
         """Should return None when chart_url is None."""
         from app.api.routes import _read_chart_metadata

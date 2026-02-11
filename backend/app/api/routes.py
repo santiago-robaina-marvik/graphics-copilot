@@ -51,7 +51,7 @@ def _read_chart_metadata(chart_url: str) -> dict | None:
             with open(json_path) as f:
                 return json.load(f)
     except Exception:
-        pass
+        logger.warning(f"Failed to read chart metadata for {chart_url}", exc_info=True)
     return None
 
 
@@ -202,6 +202,7 @@ def get_history(session_id):
 
         return jsonify({"session_id": session_id, "history": history})
     except Exception:
+        logger.warning(f"Failed to retrieve history for session {session_id}", exc_info=True)
         return jsonify({"session_id": session_id, "history": []})
 
 

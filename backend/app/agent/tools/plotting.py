@@ -236,6 +236,9 @@ def create_distribution_chart(
 
     # Calculate percentages
     total = plot_df[values_column].sum()
+    if total == 0:
+        logger.warning("All values are zero in distribution chart")
+        return "Cannot create distribution chart: all values are zero."
     plot_df = plot_df.copy()
     plot_df["_percentage"] = (plot_df[values_column] / total * 100).round(1)
 

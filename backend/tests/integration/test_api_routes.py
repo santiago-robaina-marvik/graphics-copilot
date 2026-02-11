@@ -150,6 +150,23 @@ class TestHistoryEndpoint:
         assert len(data) == 2
 
     @patch("app.api.routes.get_agent")
+    def test_history_logs_and_returns_empty_on_error(self, mock_get_agent, client):
+        """History should log warning and return empty list on exception."""
+        mock_agent = MagicMock()
+        mock_agent.get_state.side_effect = Exception("state retrieval failed")
+        mock_get_agent.return_value = mock_agent
+
+        with patch("app.api.routes.logger") as mock_logger:
+            response = client.get("/api/sessions/broken-session/history")
+
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["history"] == []
+        assert data["session_id"] == "broken-session"
+        mock_logger.warning.assert_called_once()
+        assert "broken-session" in mock_logger.warning.call_args[0][0]
+
+    @patch("app.api.routes.get_agent")
     def test_history_empty_session(self, mock_get_agent, client):
         """History should handle empty session."""
         mock_agent = MagicMock()

@@ -181,6 +181,16 @@ class TestCreateDistributionChart:
 
         assert "Distribution chart created" in result
 
+    @patch("app.agent.tools.plotting._save_chart")
+    def test_create_distribution_chart_zero_values(self, mock_save):
+        """create_distribution_chart should return error when all values are zero."""
+        set_dataframe(SID, [{"label": "A", "value": 0}, {"label": "B", "value": 0}])
+
+        result = create_distribution_chart.invoke({"labels_column": "label", "values_column": "value"}, CFG)
+
+        assert "all values are zero" in result.lower()
+        mock_save.assert_not_called()
+
 
 class TestCreateAreaChart:
     """Tests for create_area_chart tool."""
