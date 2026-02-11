@@ -25,7 +25,9 @@ Slides AI Assistant - An AI-powered presentation tool that generates charts from
 
 ## Commands
 
-### Frontend
+**Important: This is a split-directory project.** Frontend commands run from the **repo root** (`/`). Backend commands run from **`backend/`** and require the `poetry run` prefix (the virtualenv is not activated by default).
+
+### Frontend (run from repo root)
 
 ```bash
 npm install              # Install dependencies
@@ -42,7 +44,7 @@ npx vitest src/components/__tests__/App.test.jsx
 npx vitest -t "test name"
 ```
 
-### Backend
+### Backend (run from `backend/`)
 
 ```bash
 cd backend
